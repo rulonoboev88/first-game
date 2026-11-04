@@ -119,12 +119,13 @@ function goldFill(ctx) {
 
 /**
  * Рисует птицу. (x, y) — точка на земле между лапками, size — высота цыплёнка (базовая единица).
- * opts: flip, step (фаза шага 0..1), wing (0..1), blink, tilt (наклон вперёд, рад), squash.
+ * opts: flip, step (фаза шага 0..1), wing (0..1), blink, tilt (наклон вперёд, рад), squash, spin.
+ * cache: true — тело берётся из готовой картинки (быстро, для игр с сотнями птиц).
  */
 export function drawBird(ctx, kind, x, y, size, opts = {}) {
   const def = BIRDS[kind];
   const s = (size * def.height) / 100;
-  const { flip = false, step = 0, wing = 0, blink = false, tilt = 0, squash = 0, spin = 0, t = 0 } = opts;
+  const { flip = false, step = 0, wing = 0, blink = false, tilt = 0, squash = 0, spin = 0, t = 0, cache = false } = opts;
   ctx.save();
   ctx.translate(x, y);
   if (spin) {
@@ -138,12 +139,22 @@ export function drawBird(ctx, kind, x, y, size, opts = {}) {
   ctx.translate(-50, -91);
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 3.4;
 
-  if (def.fan) drawFan(ctx, def.fan);
+  drawLegs(ctx, def, step);
 
-  // лапки
+  if (cache) {
+    const m = ctx.getTransform();
+    const px = Math.hypot(m.a, m.b);
+    const sprite = getSprite(kind, px, wing, blink);
+    ctx.drawImage(sprite.canvas, -PAD, -PAD, BOX, BOX);
+  } else {
+    drawBody(ctx, def, wing, blink);
+  }
+  if (def.sparkle) drawSparkles(ctx, t);
+  ctx.restore();
+}
+
+function drawLegs(ctx, def, step) {
   const a = Math.sin(step * Math.PI * 2) * 4;
   ctx.strokeStyle = def.legColor;
   ctx.lineWidth = def.legWidth;
@@ -166,9 +177,14 @@ export function drawBird(ctx, kind, x, y, size, opts = {}) {
       ctx.stroke();
     }
   });
+}
+
+function drawBody(ctx, def, wing, blink) {
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
   ctx.strokeStyle = INK;
   ctx.lineWidth = 3.4;
-
+  if (def.fan) drawFan(ctx, def.fan);
   for (const part of def.parts) {
     const fill = part.fill === 'gold' ? goldFill(ctx) : part.fill;
     if (part.name === 'wing' && wing) {
@@ -182,7 +198,6 @@ export function drawBird(ctx, kind, x, y, size, opts = {}) {
       ctx.fillStyle = fill; ctx.fill(part.path); ctx.stroke(part.path);
     }
   }
-
   const [ex, ey, er] = def.eye;
   if (blink) {
     ctx.beginPath();
@@ -197,8 +212,31 @@ export function drawBird(ctx, kind, x, y, size, opts = {}) {
     ctx.fillStyle = 'rgba(255,138,128,0.5)';
     ctx.fill(circlePath(def.cheek[0], def.cheek[1], def.cheek[2]));
   }
-  if (def.sparkle) drawSparkles(ctx, t);
-  ctx.restore();
+}
+
+// ---------- Кэш картинок птиц ----------
+// Тело птицы рисуется один раз в картинку под нужный масштаб, дальше только копируется.
+const PAD = 16;
+const BOX = 100 + PAD * 2;
+const sprites = new Map();
+
+function getSprite(kind, px, wing, blink) {
+  // масштаб округляем ступеньками ~7%, чтобы анимация роста не плодила тысячи картинок
+  const q = Math.pow(1.07, Math.round(Math.log(Math.max(0.05, px)) / Math.log(1.07)));
+  const wb = Math.round(wing * 3) / 3;
+  const key = kind + '|' + q.toFixed(4) + '|' + wb + '|' + (blink ? 1 : 0);
+  let sp = sprites.get(key);
+  if (sp) return sp;
+  if (sprites.size > 600) sprites.clear();
+  const n = Math.max(2, Math.ceil(BOX * q));
+  const canvas = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(n, n) : Object.assign(document.createElement('canvas'), { width: n, height: n });
+  const c = canvas.getContext('2d');
+  c.scale(n / BOX, n / BOX);
+  c.translate(PAD, PAD);
+  drawBody(c, BIRDS[kind], wb, blink);
+  sp = { canvas };
+  sprites.set(key, sp);
+  return sp;
 }
 
 function drawFan(ctx, fan) {

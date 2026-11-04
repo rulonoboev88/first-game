@@ -58,7 +58,9 @@ export default class TestGame {
     for (const d of this.dots) { d.x *= sx; d.y *= sy; }
   }
 
-  update() {}
+  update(dt) {
+    this.fps = this.fps ? this.fps * 0.95 + (1 / Math.max(dt, 0.001)) * 0.05 : 60;
+  }
 
   draw(ctx) {
     const { w, h } = this.stage;
@@ -77,7 +79,7 @@ export default class TestGame {
     ctx.fillStyle = 'rgba(74,44,23,0.35)';
     ctx.font = '800 12px Nunito, sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(`v${window.FG_VERSION || 'dev'} · ${w}×${h}`, w - 12, h - 12);
+    ctx.fillText(`v${window.FG_VERSION || 'dev'} · ${w}×${h} · ${Math.round(this.fps || 0)} fps`, w - 12, h - 12);
   }
 
   destroy() {}

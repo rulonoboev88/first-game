@@ -4,7 +4,8 @@
 export const GAMES = [
   { id: 'test',      ready: true,  bg: '#FFF4E0', label: { uk: 'Перевірка', ru: 'Проверка', en: 'Test' },
     load: () => import('./test.js') },
-  { id: 'chicks',    ready: false, bg: '#FFF7D1', label: { uk: 'Курчата', ru: 'Цыплята', en: 'Chicks' } },
+  { id: 'chicks',    ready: true,  bg: '#FFF7D1', label: { uk: 'Курчата', ru: 'Цыплята', en: 'Chicks' },
+    load: () => import('./chicks.js') },
   { id: 'bubbles',   ready: false, bg: '#E3F3FF', label: { uk: 'Бульбашки', ru: 'Пузыри', en: 'Bubbles' } },
   { id: 'paint',     ready: false, bg: '#FFE9EC', label: { uk: 'Фарби', ru: 'Краски', en: 'Paint' } },
   { id: 'blocks',    ready: false, bg: '#E6F8E8', label: { uk: 'Кубики', ru: 'Кубики', en: 'Blocks' } },

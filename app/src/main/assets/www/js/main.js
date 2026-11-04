@@ -124,6 +124,7 @@ async function openGame(g) {
   });
 
   current = { game, stage, input, raf: 0, last: performance.now() };
+  window.__game = game; // для отладки
   const frame = (t) => {
     if (!current) return;
     const dt = Math.min(0.05, (t - current.last) / 1000);
