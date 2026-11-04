@@ -1,0 +1,66 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.14.3
+
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Restore signing key
+        env:
+          FG_KEYSTORE_B64: ${{ secrets.FG_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$FG_KEYSTORE_B64" ]; then
+            echo "$FG_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "FG_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "Signing with release key"
+          else
+            echo "::warning::No release key in secrets - building with debug key"
+          fi
+
+      - name: Build APK and AAB
+        env:
+          FG_KEYSTORE_PASSWORD: ${{ secrets.FG_KEYSTORE_PASSWORD }}
+          FG_KEY_ALIAS: ${{ secrets.FG_KEY_ALIAS }}
+          FG_KEY_PASSWORD: ${{ secrets.FG_KEY_PASSWORD }}
+        run: gradle --no-daemon assembleRelease bundleRelease
+
+      - name: Collect outputs
+        run: |
+          mkdir -p out
+          V="0.1.${GITHUB_RUN_NUMBER}"
+          cp app/build/outputs/apk/release/*.apk "out/first-game-$V.apk"
+          cp app/build/outputs/bundle/release/*.aab "out/first-game-$V.aab"
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: first-game-0.1.${{ github.run_number }}
+          path: out/*
+          retention-days: 30

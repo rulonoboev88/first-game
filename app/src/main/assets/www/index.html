@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>First Game</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Меню -->
+  <main id="menu" class="screen">
+    <header class="menu-head">
+      <h1 class="title">First Game</h1>
+    </header>
+    <section id="tiles" class="tiles"></section>
+  </main>
+
+  <!-- Экран игры -->
+  <div id="game" class="screen hidden">
+    <div id="stage"></div>
+    <button id="btn-home" class="hold-btn corner-tl" aria-label="menu"></button>
+    <button id="btn-erase" class="hold-btn corner-tr hidden" aria-label="erase"></button>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
