@@ -12,7 +12,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const GRAIN_COLORS = ['#E0A458', '#D4A24C', '#C98E3E', '#F0C27B', '#B8863B'];
 
 // Насколько быстро ходит каждая птица (в высотах цыплёнка в секунду).
-const SPEED = { chick: [0.55, 1.5], gold: [0.6, 1.3], duckling: [0.5, 1.3], gosling: [0.45, 1.1], hen: [0.35, 0.8], rooster: [0.35, 0.75], turkey: [0.3, 0.6] };
+const SPEED = { chick: [0.9, 2.4], gold: [1.0, 2.1], duckling: [0.8, 2.1], gosling: [0.75, 1.8], hen: [0.6, 1.3], rooster: [0.6, 1.2], turkey: [0.5, 1.0] };
 
 export default class ChicksGame {
   static erasable = false;
@@ -30,7 +30,7 @@ export default class ChicksGame {
   }
 
   get size() {
-    return clamp(this.stage.unit * 0.17, 72, 180);
+    return clamp(this.stage.unit * 0.058, 30, 64);
   }
 
   pan(x) {
@@ -121,7 +121,7 @@ export default class ChicksGame {
   startFox() {
     const { w, h } = this.stage;
     const fromLeft = Math.random() < 0.5;
-    const sz = this.size * 1.45;
+    const sz = this.size * 1.9;
     this.fox = {
       fromLeft, sz, t: 0, run: 0,
       x: fromLeft ? -sz * 1.2 : w + sz * 1.2,
@@ -192,7 +192,7 @@ export default class ChicksGame {
     for (const b of this.birds) {
       const H = b.sz * BIRDS[b.kind].height;
       const cx = b.x, cy = b.y - H * 0.48 - b.hop;
-      const rx = H * 0.48, ry = H * 0.5;
+      const rx = Math.max(H * 0.5, 26), ry = Math.max(H * 0.52, 26); // палец малыша толще птички
       const dx = (x - cx) / rx, dy = (y - cy) / ry;
       if (dx * dx + dy * dy <= 1 && b.y > bestY) { best = b; bestY = b.y; }
     }
@@ -200,13 +200,13 @@ export default class ChicksGame {
   }
 
   hitEgg(x, y) {
-    return this.eggs.find((e) => e.t < e.hatchAt && Math.hypot(x - e.x, y - (e.y - e.sz * 0.4)) < e.sz * 0.55);
+    return this.eggs.find((e) => e.t < e.hatchAt && Math.hypot(x - e.x, y - (e.y - e.sz * 0.4)) < Math.max(e.sz * 0.55, 24));
   }
 
   hitFox(x, y) {
     const f = this.fox;
     if (!f) return false;
-    return Math.abs(x - f.x) < f.sz * 0.8 && y < f.y && y > f.y - f.sz * 0.9;
+    return Math.abs(x - f.x) < Math.max(f.sz * 0.8, 40) && y < f.y + 10 && y > f.y - Math.max(f.sz * 0.9, 50);
   }
 
   onDown(p) {
@@ -244,7 +244,7 @@ export default class ChicksGame {
   }
 
   onMove(p) {
-    const step = this.size * 0.13;
+    const step = this.size * 0.22;
     const lg = p.data.lastGrain;
     let d = Math.hypot(p.x - lg.x, p.y - lg.y);
     if (d < step) return;
@@ -261,7 +261,7 @@ export default class ChicksGame {
 
   addGrain(x, y) {
     if (this.grains.length > 500) this.grains.shift();
-    this.grains.push({ x, y, rot: rnd(0, Math.PI), c: pick(GRAIN_COLORS), born: this.time, r: this.size * rnd(0.04, 0.055), taken: 0 });
+    this.grains.push({ x, y, rot: rnd(0, Math.PI), c: pick(GRAIN_COLORS), born: this.time, r: Math.max(2.2, this.size * rnd(0.06, 0.08)), taken: 0 });
     if (Math.random() < 0.35) S.grainTick(this.pan(x));
     if (Math.random() < 0.3) haptic(0);
   }
