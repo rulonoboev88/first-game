@@ -241,7 +241,7 @@ export default class BubblesGame {
         const ht = this.time - b.holdStart;
         if (ht > 0.18) {
           const prevR = b.r;
-          b.r = Math.min(rMax * 1.02, b.r0 + (ht - 0.18) * u * 0.065 * (1 + (ht - 0.18) * 0.15));
+          b.r = Math.min(rMax * 1.02, b.r0 + (ht - 0.18) * u * 0.087 * (1 + (ht - 0.18) * 0.15));
           // «пуп-пуп-пуп» по мере роста
           const step = Math.floor(b.r / (u * 0.03));
           if (step !== Math.floor(prevR / (u * 0.03))) {
