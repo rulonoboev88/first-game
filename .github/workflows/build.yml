@@ -37,18 +37,30 @@ jobs:
           FG_KEYSTORE_B64: ${{ secrets.FG_KEYSTORE_B64 }}
         run: |
           if [ -n "$FG_KEYSTORE_B64" ]; then
-            echo "$FG_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            printf '%s' "${FG_KEYSTORE_B64#*FG_KEYSTORE_B64=}" | tr -d ' \r\n' | base64 -d > "$RUNNER_TEMP/release.jks"
             echo "FG_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
             echo "Signing with release key"
           else
             echo "::warning::No release key in secrets - building with debug key"
           fi
 
-      - name: Build APK and AAB
+      # Секреты чистим от случайного «ИМЯ=» в начале, пробелов и переносов строк.
+      - name: Prepare signing secrets
         env:
-          FG_KEYSTORE_PASSWORD: ${{ secrets.FG_KEYSTORE_PASSWORD }}
-          FG_KEY_ALIAS: ${{ secrets.FG_KEY_ALIAS }}
-          FG_KEY_PASSWORD: ${{ secrets.FG_KEY_PASSWORD }}
+          RAW_STORE_PW: ${{ secrets.FG_KEYSTORE_PASSWORD }}
+          RAW_ALIAS: ${{ secrets.FG_KEY_ALIAS }}
+          RAW_KEY_PW: ${{ secrets.FG_KEY_PASSWORD }}
+        run: |
+          clean() { local v="$1"; v="${v#*$2=}"; v="$(printf '%s' "$v" | tr -d '\r\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"; printf '%s' "$v"; }
+          SP="$(clean "$RAW_STORE_PW" FG_KEYSTORE_PASSWORD)"
+          AL="$(clean "$RAW_ALIAS" FG_KEY_ALIAS)"
+          KP="$(clean "$RAW_KEY_PW" FG_KEY_PASSWORD)"
+          [ -z "$KP" ] && KP="$SP"
+          [ -z "$AL" ] && AL="firstgame"
+          echo "::add-mask::$SP"; echo "::add-mask::$KP"
+          { echo "FG_KEYSTORE_PASSWORD=$SP"; echo "FG_KEY_ALIAS=$AL"; echo "FG_KEY_PASSWORD=$KP"; } >> "$GITHUB_ENV"
+
+      - name: Build APK and AAB
         run: gradle --no-daemon assembleRelease bundleRelease
 
       - name: Collect outputs
