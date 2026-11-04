@@ -1,0 +1,15 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#fff">
+<canvas id="c" width="1400" height="520"></canvas>
+<script type="module">
+import { drawBird, drawEgg, drawFox, drawGrain } from '../js/art/birds.js';
+const c=document.getElementById('c'), ctx=c.getContext('2d');
+const u=110;
+const kinds=['chick','gold','duckling','gosling','hen','rooster','turkey'];
+kinds.forEach((k,i)=>drawBird(ctx,k,90+i*185,230,u,{t:1}));
+drawEgg(ctx,90,460,u*0.7);
+drawEgg(ctx,230,460,u*0.7,{crack:1});
+drawEgg(ctx,370,460,u*0.7,{open:0.4});
+drawFox(ctx,680,470,u*1.4);
+drawFox(ctx,1060,470,u*1.4,{run:0.25,flip:true});
+for(let i=0;i<8;i++)drawGrain(ctx,1250+i*15,450+(i%3)*8,6,i,'#E0A458');
+</script>
