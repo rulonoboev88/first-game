@@ -51,7 +51,12 @@ jobs:
           RAW_ALIAS: ${{ secrets.FG_KEY_ALIAS }}
           RAW_KEY_PW: ${{ secrets.FG_KEY_PASSWORD }}
         run: |
-          clean() { local v="$1"; v="${v#*$2=}"; v="$(printf '%s' "$v" | tr -d '\r\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"; printf '%s' "$v"; }
+          clean() {
+            # если вставлен весь файл «ИМЯ=значение» — берём строку с нужным именем
+            local v; v="$(printf '%s\n' "$1" | tr -d '\r' | sed -n "s/^[[:space:]]*$2=//p" | head -1)"
+            [ -z "$v" ] && v="$(printf '%s' "$1" | tr -d '\r\n')"
+            printf '%s' "$v" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
+          }
           SP="$(clean "$RAW_STORE_PW" FG_KEYSTORE_PASSWORD)"
           AL="$(clean "$RAW_ALIAS" FG_KEY_ALIAS)"
           KP="$(clean "$RAW_KEY_PW" FG_KEY_PASSWORD)"
