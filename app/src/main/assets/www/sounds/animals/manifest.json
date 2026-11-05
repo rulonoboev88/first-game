@@ -1,1 +1,37 @@
-{}
+{
+ "cow": [
+  "cow_1",
+  "cow_2"
+ ],
+ "sheep": [
+  "sheep_1",
+  "sheep_2"
+ ],
+ "goat": [
+  "goat_1",
+  "goat_2"
+ ],
+ "horse": [
+  "horse_1",
+  "horse_2"
+ ],
+ "dog": [
+  "dog_1",
+  "dog_2"
+ ],
+ "cat": [
+  "cat_1",
+  "cat_2"
+ ],
+ "frog": [
+  "frog_1",
+  "frog_2"
+ ],
+ "owl": [
+  "owl_1"
+ ],
+ "pig": [
+  "pig_1",
+  "pig_2"
+ ]
+}

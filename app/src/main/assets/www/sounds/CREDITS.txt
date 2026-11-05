@@ -17,3 +17,17 @@ Freesound.org — downloaded with the CC0 license filter
   - "turkey gobble 4 96khz" by jarredgibb (sound 233126)  -> farm/turkey_1.ogg
 
 All other sounds in the game are synthesized in code (Web Audio).
+
+Animals (sounds/animals/) — BigSoundBank.com by Joseph Sardin, CC0 (public domain)
+  - Cow moos #2 (ID 2382), Cow moos #3 (ID 2383)             -> cow_*.ogg
+  - Sheep #1 (ID 2343), Sheep #3 (ID 2345)                   -> sheep_*.ogg
+  - Bleating goat #1 (ID 0279), Young goat #1 (ID 1378)      -> goat_*.ogg
+  - Neighing of a horse #1 (ID 0284), Horse neighing #5 (ID 1542) -> horse_*.ogg
+  - Barking dog #3 (ID 2955), Barking of a Spitz (ID 0682)   -> dog_*.ogg
+  - Meow cat #2 (ID 1890), Little meow of a cat (ID 0494)    -> cat_*.ogg
+  - One frog (ID 0819)                                       -> frog_*.ogg
+  - Tawny owl #3 (ID 3459)                                   -> owl_1.ogg
+
+Freesound.org — downloaded with the CC0 license filter
+  - "pig oink" by qubodup (sound 442906)        -> pig_1.ogg
+  - "pig_oink" by calebmills99 (sound 867554)   -> pig_2.ogg
