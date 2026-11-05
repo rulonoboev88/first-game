@@ -90,10 +90,10 @@ new ResizeObserver(() => { if (!menuEl.classList.contains('hidden')) layoutMenu(
 let current = null; // { game, stage, input, raf }
 
 const homeBtn = new HoldButton(document.getElementById('btn-home'), {
-  icon: 'home', duration: 1500, onDone: closeGame,
+  icon: 'home', duration: 1000, onDone: closeGame,
 });
 const eraseBtn = new HoldButton(eraseEl, {
-  icon: 'erase', duration: 3000,
+  icon: 'erase', duration: 2000,
   onDone: () => {
     if (current && current.game.erase) {
       current.game.erase();

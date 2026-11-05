@@ -1,7 +1,7 @@
 // Кубики. Белый фон.
 // Тап → под пальцем появляется кубик и с настоящей физикой падает на другие.
 // Тап по кубику → подпрыгивает и меняет цвет.
-// Иногда появляется радужный кубик: тап по нему — взрыв конфетти, кубики разлетаются, экран чистый.
+// Иногда появляется радужный кубик: тап по нему — БАБАХ, конфетти, кубики разлетаются, экран чистый.
 import { loadScript } from '../core/loadScript.js';
 import { tone, noise, chime, pentaFreq, panFor } from '../core/audio.js';
 import { haptic } from '../core/haptics.js';
@@ -164,9 +164,14 @@ export default class BlocksGame {
     const M = this.M;
     const c = rb.body.position;
     const p = this.pan(c.x);
-    // волшебный звук без «бахов»: вихрь + перезвон вверх
-    noise({ dur: 0.7, gain: 0.18, type: 'bandpass', freq: 600, to: 4000, q: 0.8, pan: p, wet: 1 });
-    [523.25, 659.25, 783.99, 1046.5, 1318.5, 1568, 2093].forEach((f, i) => chime(f, { gain: 0.09, dur: 1.2, at: i * 0.055, pan: p }));
+    // БАБАХ! Ева кричит вместе с ним: низкий удар + раскат + треск, потом звон конфетти
+    tone({ freq: 160, to: 32, dur: 0.6, type: 'sine', gain: 0.95, attack: 0.003, release: 0.45, pan: p, wet: 0.6 });
+    tone({ freq: 90, to: 28, dur: 0.9, type: 'triangle', gain: 0.5, attack: 0.004, release: 0.7, pan: p, wet: 0.8 });
+    noise({ dur: 1.3, gain: 0.75, type: 'lowpass', freq: 2400, to: 160, q: 0.7, attack: 0.002, pan: p, wet: 1 });
+    noise({ dur: 0.09, gain: 0.5, type: 'highpass', freq: 2200, attack: 0.001, pan: p, wet: 0.4 });
+    noise({ dur: 1.8, gain: 0.22, type: 'lowpass', freq: 420, to: 90, q: 0.5, attack: 0.05, at: 0.1, pan: p, wet: 1 });
+    [1046.5, 1318.5, 1568, 2093].forEach((f, i) => chime(f, { gain: 0.05, dur: 1.0, at: 0.35 + i * 0.07, pan: p }));
+    this.shakeAt = this.time;
     haptic(2);
     // все кубики превращаются в разлетающиеся (без физики стенок) и улетают за экран
     for (const b of this.blocks) {
@@ -285,6 +290,10 @@ export default class BlocksGame {
     const { w, h } = this.stage;
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, w, h);
+    // тряска экрана после взрыва
+    const sk = this.shakeAt != null ? Math.max(0, 1 - (this.time - this.shakeAt) / 0.5) : 0;
+    ctx.save();
+    if (sk > 0) ctx.translate(rnd(-1, 1) * this.u * 0.025 * sk, rnd(-1, 1) * this.u * 0.025 * sk);
 
     for (const b of this.blocks) {
       const p = b.body.position;
@@ -304,6 +313,7 @@ export default class BlocksGame {
       ctx.fillRect(-c.w / 2, -c.h / 2, c.w * Math.abs(Math.cos(c.a * 0.7)), c.h);
       ctx.restore();
     }
+    ctx.restore();
   }
 
   destroy() {
