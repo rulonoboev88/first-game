@@ -20,9 +20,12 @@ export const GAMES = [
     load: () => import('./hide.js') },
   { id: 'fish',      ready: true,  bg: '#DFF1FF', label: { uk: 'Акваріум', ru: 'Аквариум', en: 'Aquarium' },
     load: () => import('./fish.js') },
-  { id: 'sky',       ready: false, bg: '#E3E6FF', label: { uk: 'Нічне небо', ru: 'Ночное небо', en: 'Night sky' } },
-  { id: 'fireworks', ready: false, bg: '#FFE6F2', label: { uk: 'Салют', ru: 'Салют', en: 'Fireworks' } },
-  { id: 'ducks',     ready: false, bg: '#E0F6FF', label: { uk: 'Качечки', ru: 'Уточки', en: 'Duckies' } },
+  { id: 'sky', ready: true, bg: '#E3E6FF', label: { uk: 'Нічне небо', ru: 'Ночное небо', en: 'Night sky' },
+    load: () => import('./sky.js') },
+  { id: 'fireworks', ready: true, bg: '#FFE6F2', label: { uk: 'Салют', ru: 'Салют', en: 'Fireworks' },
+    load: () => import('./fireworks.js') },
+  { id: 'ducks', ready: true, bg: '#E0F6FF', label: { uk: 'Качечки', ru: 'Уточки', en: 'Duckies' },
+    load: () => import('./ducks.js') },
   { id: 'train',     ready: false, bg: '#FFE8E3', label: { uk: 'Потяг', ru: 'Паровозик', en: 'Train' } },
 ];
 
