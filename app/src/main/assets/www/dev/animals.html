@@ -1,0 +1,7 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#fff">
+<canvas id="c" width="1300" height="560"></canvas>
+<script type="module">
+import { drawAnimal, ANIMALS } from '../js/art/animals.js';
+const c=document.getElementById('c'), ctx=c.getContext('2d');
+ANIMALS.forEach((k,i)=>drawAnimal(ctx,k,110+(i%6)*210,140+Math.floor(i/6)*280,150,{open:i%3===1?0.8:0, blink:i===4, wave:i===2?1:0}));
+</script>
