@@ -231,3 +231,56 @@ export function playSample(key, { rate = 1, gain = 0.6, pan = 0, at = 0, wet = 0
   track(src, t0 + buf.duration / rate);
   return true;
 }
+
+// ---------- Длящийся голос (для звучащей линии в рисовалке) ----------
+
+/** Непрерывный звук, которым можно управлять: высота, громкость, остановка. */
+export function createVoice({ type = 'triangle', freq = 440, pan = 0, filterFreq = 2200 } = {}) {
+  if (!ctx || ctx.state !== 'running') return null;
+  const o = ctx.createOscillator();
+  o.type = type;
+  o.frequency.value = freq;
+  const o2 = ctx.createOscillator(); // лёгкая октава сверху — теплее
+  o2.type = 'sine';
+  o2.frequency.value = freq * 2;
+  const g2 = ctx.createGain();
+  g2.gain.value = 0.18;
+  const f = ctx.createBiquadFilter();
+  f.type = 'lowpass';
+  f.frequency.value = filterFreq;
+  const g = ctx.createGain();
+  g.gain.value = 0.0001;
+  o.connect(f);
+  o2.connect(g2);
+  g2.connect(f);
+  f.connect(g);
+  const out = outNode(pan, 0.8);
+  g.connect(out);
+  o.start();
+  o2.start();
+  active++;
+  let stopped = false;
+  return {
+    setFreq(v, glide = 0.06) {
+      const t = ctx.currentTime;
+      o.frequency.setTargetAtTime(v, t, glide);
+      o2.frequency.setTargetAtTime(v * 2, t, glide);
+    },
+    setGain(v, time = 0.05) {
+      g.gain.setTargetAtTime(Math.max(0.0001, v), ctx.currentTime, time);
+    },
+    setPan(v) {
+      if (out.pan) out.pan.setTargetAtTime(Math.max(-1, Math.min(1, v)), ctx.currentTime, 0.05);
+    },
+    stop() {
+      if (stopped) return;
+      stopped = true;
+      const t = ctx.currentTime;
+      g.gain.cancelScheduledValues(t);
+      g.gain.setTargetAtTime(0.0001, t, 0.08);
+      o.stop(t + 0.5);
+      o2.stop(t + 0.5);
+      o.onended = () => { active--; };
+    },
+  };
+}

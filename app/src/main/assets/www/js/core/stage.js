@@ -1,11 +1,14 @@
 // Полноэкранный холст с учётом плотности пикселей и смены размера (Fold: сложил/разложил).
 
 export class Stage {
-  constructor(host) {
+  constructor(host, { webgl = false, maxDpr = 3 } = {}) {
     this.host = host;
+    this.webgl = webgl;
+    this.maxDpr = maxDpr;
     this.canvas = document.createElement('canvas');
     host.appendChild(this.canvas);
-    this.ctx = this.canvas.getContext('2d', { alpha: false, desynchronized: true });
+    // WebGL-игры сами создают свой контекст; остальным — обычный 2D.
+    this.ctx = webgl ? null : this.canvas.getContext('2d', { alpha: false, desynchronized: true });
     this.w = 0;      // ширина в CSS-пикселях
     this.h = 0;      // высота в CSS-пикселях
     this.dpr = 1;
@@ -17,7 +20,7 @@ export class Stage {
 
   resize() {
     const r = this.host.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const dpr = Math.min(window.devicePixelRatio || 1, this.maxDpr);
     const w = Math.max(1, Math.round(r.width));
     const h = Math.max(1, Math.round(r.height));
     if (w === this.w && h === this.h && dpr === this.dpr) return;
@@ -25,7 +28,7 @@ export class Stage {
     this.w = w; this.h = h; this.dpr = dpr;
     this.canvas.width = Math.round(w * dpr);
     this.canvas.height = Math.round(h * dpr);
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (this.ctx) this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (this.onResize && prev.w) this.onResize(prev, { w, h });
   }
 

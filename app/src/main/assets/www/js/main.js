@@ -108,13 +108,14 @@ async function openGame(g) {
   chime(pentaFreq(7), { gain: 0.12, dur: 0.6 });
   const mod = await g.load();
   const Game = mod.default;
+  if (Game.prepare) await Game.prepare(); // например, загрузить физический движок
 
   menuEl.classList.add('hidden');
   gameEl.classList.remove('hidden');
   gameEl.style.background = Game.background || '#fff';
   eraseEl.classList.toggle('hidden', !Game.erasable);
 
-  const stage = new Stage(stageEl);
+  const stage = new Stage(stageEl, { webgl: !!Game.webgl, maxDpr: Game.maxDpr || 3 });
   const game = new Game(stage);
   stage.onResize = (prev, next) => game.resize && game.resize(prev, next);
   const input = new Input(stage.canvas, {
