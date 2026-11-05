@@ -1,0 +1,19 @@
+Animal sound recordings used in First Game
+==========================================
+
+All recordings are public domain (CC0 1.0). They were trimmed, filtered,
+denoised, loudness-matched and re-encoded to OGG Vorbis for the game.
+
+BigSoundBank.com by Joseph Sardin — CC0 (public domain)
+  - Chick that chirp (ID 0672)      -> farm/chick_*.ogg
+  - Annoyed hen (ID 0453)           -> farm/hen_*.ogg
+  - Hen lays #2 (ID 0976)           -> farm/henlay_*.ogg
+  - Song of rooster (ID 0283)       -> farm/rooster_1.ogg
+  - Cock song #1 (ID 0440)          -> farm/rooster_2.ogg
+
+Freesound.org — downloaded with the CC0 license filter
+  - "duck quacking" by digpro120 (sound 558858)          -> farm/duck_*.ogg
+  - "goose honk" by jahjahjahjah (sound 805297)          -> farm/goose_1.ogg
+  - "turkey gobble 4 96khz" by jarredgibb (sound 233126)  -> farm/turkey_1.ogg
+
+All other sounds in the game are synthesized in code (Web Audio).

@@ -1,0 +1,38 @@
+{
+ "rooster": [
+  "rooster_1",
+  "rooster_2"
+ ],
+ "hen": [
+  "hen_1",
+  "hen_2",
+  "hen_3",
+  "hen_4"
+ ],
+ "henlay": [
+  "henlay_1",
+  "henlay_2"
+ ],
+ "duck": [
+  "duck_1",
+  "duck_2",
+  "duck_3",
+  "duck_4"
+ ],
+ "goose": [
+  "goose_1"
+ ],
+ "turkey": [
+  "turkey_1"
+ ],
+ "chick": [
+  "chick_1",
+  "chick_2",
+  "chick_3",
+  "chick_4",
+  "chick_5",
+  "chick_6",
+  "chick_7",
+  "chick_8"
+ ]
+}

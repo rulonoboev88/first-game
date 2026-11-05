@@ -188,3 +188,46 @@ export function chime(freq, { gain = 0.18, dur = 1.2, at = 0, pan = 0 } = {}) {
 export function panFor(x, w) {
   return ((x / Math.max(1, w)) * 2 - 1) * 0.7;
 }
+
+// ---------- Записанные звуки (сэмплы) ----------
+// Короткие OGG-файлы из sounds/. Грузятся заранее; пока не загрузились — игра использует синтез.
+
+const samples = new Map();   // имя → AudioBuffer
+const loading = new Map();   // имя → Promise
+
+export function loadSamples(dir, names) {
+  initAudio();
+  if (!ctx) return Promise.resolve();
+  return Promise.all(names.map((n) => {
+    const key = dir + '/' + n;
+    if (samples.has(key) || loading.has(key)) return loading.get(key);
+    const p = fetch(`${dir}/${n}.ogg`)
+      .then((r) => r.arrayBuffer())
+      .then((b) => ctx.decodeAudioData(b))
+      .then((buf) => { samples.set(key, buf); })
+      .catch(() => {});
+    loading.set(key, p);
+    return p;
+  }));
+}
+
+export function hasSample(key) {
+  return samples.has(key);
+}
+
+/** Проигрывает сэмпл. rate — скорость (выше = тоньше голос). Возвращает false, если не загружен. */
+export function playSample(key, { rate = 1, gain = 0.6, pan = 0, at = 0, wet = 0.4 } = {}) {
+  const buf = samples.get(key);
+  if (!buf || !canPlay()) return false;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.playbackRate.value = rate;
+  const g = ctx.createGain();
+  g.gain.value = gain;
+  src.connect(g);
+  g.connect(outNode(pan, wet));
+  const t0 = ctx.currentTime + at;
+  src.start(t0);
+  track(src, t0 + buf.duration / rate);
+  return true;
+}

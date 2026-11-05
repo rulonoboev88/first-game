@@ -27,6 +27,7 @@ export default class ChicksGame {
     this.taps = 0;
     this.lastFoxAt = -999;
     this.time = 0;
+    S.preloadFarm(); // натуральные голоса птиц
   }
 
   get size() {
@@ -131,7 +132,7 @@ export default class ChicksGame {
       phase: 'in', flip: !fromLeft, hop: 0,
     };
     this.lastFoxAt = this.time;
-    S.yip(this.pan(this.fox.x));
+    S.foxEnter(this.pan(this.fox.x));
     for (const b of this.birds) this.makeFlee(b);
     // Писк паники «волной»
     this.birds.slice(0, 8).forEach((b, i) => setTimeout(() => S.panicChirp(this.pan(b.x)), i * 90));
@@ -213,7 +214,7 @@ export default class ChicksGame {
     p.data.lastGrain = { x: p.x, y: p.y };
     if (this.hitFox(p.x, p.y)) {
       this.fox.hop = 1;
-      S.yip(this.pan(p.x));
+      S.foxBoing(this.pan(p.x));
       haptic(1);
       p.data.reacted = true;
       return;
