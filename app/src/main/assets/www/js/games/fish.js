@@ -220,17 +220,29 @@ export default class FishGame {
           const d = Math.hypot(c.x - f.x, c.y - f.y) + c.taken * f.size;
           if (d < bd) { bd = d; best = c; }
         }
-        if (best && bd < this.u * 0.9) { f.target = best; best.taken++; }
+        if (best && bd < this.u * 0.9 && best !== f.skip) { f.target = best; best.taken++; f.seekT = 0; }
       }
     } else f.target = null;
 
     if (f.target) {
-      tx = f.target.x; ty = f.target.y;
-      speed = f.speed * 2.2 + f.size * 0.4;
-      if (Math.hypot(tx - (f.x + f.dir * f.size * 0.35), ty - f.y) < f.size * 0.25) {
-        f.target.eaten = true; f.target = null; f.eatT = 0.3;
+      const c = f.target;
+      f.seekT += dt;
+      // разворачиваемся к корму только если он заметно сбоку — без дёрганья туда-сюда
+      if (Math.abs(c.x - f.x) > f.size * 0.45) f.dir = c.x > f.x ? 1 : -1;
+      // ведём к корму РОТ (он впереди тела), а не центр тела
+      const mouthX = f.x + f.dir * f.size * 0.38, mouthY = f.y + f.size * 0.05;
+      const md = Math.hypot(c.x - mouthX, c.y - mouthY);
+      tx = c.x - f.dir * f.size * 0.38; ty = c.y - f.size * 0.05;
+      // у цели плавно тормозим
+      speed = (f.speed * 2.2 + f.size * 0.4) * Math.min(1, 0.25 + md / (f.size * 0.8));
+      if (md < f.size * 0.3) {
+        c.eaten = true; f.target = null; f.eatT = 0.3;
         tone({ freq: 220, to: 140, dur: 0.08, type: 'sine', gain: 0.16, attack: 0.003, pan: this.pan(f.x), wet: 0.3 });
         noise({ dur: 0.03, gain: 0.06, type: 'bandpass', freq: 1800, q: 2, pan: this.pan(f.x), wet: 0.2 });
+        tx = null;
+      } else if (f.seekT > 4) {
+        // не получилось за 4 с — ищем другую крошку
+        f.skip = c; c.taken = Math.max(0, c.taken - 1); f.target = null; tx = null;
       }
     }
 
@@ -248,9 +260,9 @@ export default class FishGame {
       f.x += f.dir * f.size * 0.2 * dt;
     } else if (tx != null) {
       const dx = tx - f.x, dy = ty - f.y, d = Math.hypot(dx, dy) || 1;
-      f.x += (dx / d) * speed * dt;
-      f.y += (dy / d) * speed * dt;
-      if (Math.abs(dx) > f.size * 0.1) f.dir = dx > 0 ? 1 : -1;
+      const step = Math.min(d, speed * dt); // не перелетаем цель
+      f.x += (dx / d) * step;
+      f.y += (dy / d) * step;
     } else {
       f.x += f.dir * speed * dt;
       // плавное блуждание по высоте
@@ -261,7 +273,8 @@ export default class FishGame {
     // стенки аквариума: разворот
     if (f.x < margin) { f.x = margin; f.dir = 1; }
     if (f.x > w - margin) { f.x = w - margin; f.dir = -1; }
-    f.y = clamp(f.y, top + f.size * 0.3, bottom - f.size * 0.35);
+    // за кормом можно нырнуть к самому песку, иначе держимся чуть выше дна
+    f.y = clamp(f.y, top + f.size * 0.3, bottom - f.size * (f.target ? 0.1 : 0.35));
     // плавный разворот (сжатие по ширине)
     f.flip += (f.dir - f.flip) * Math.min(1, dt * 7);
   }
