@@ -1,16 +1,19 @@
-// Стекающая краска. Белая стена.
-// Краска — слой с толщиной. Если слой толще порога, излишек стекает вниз (у каждого «столбика» своя скорость и порог —
-// подтёки бегут по-разному). Толстые струйки перетягивают краску соседей — так рождаются ручейки и капли на концах.
-// По пути мокрая краска оставляет матовый след и постепенно истощается. Подтёки разных цветов, сливаясь, смешиваются.
-// Тап → клякса. Проведение → мазок. Удержание → краски всё больше, сильнее течёт.
+// Стекающая краска. Белая стена. Полное разрешение экрана.
+// Каждый подтёк — отдельная капля со своим объёмом краски (без сеток и «столбцов»):
+//  • капли рождаются в случайных местах у нижнего края кляксы, пока в ней много краски;
+//  • чем больше краски в капле, тем быстрее бежит; по пути оставляет след и «худеет» —
+//    след сужается, капля замедляется и останавливается круглой бусиной;
+//  • путь слегка извилистый, у каждой капли свой; соседние капли сливаются;
+//  • капля, пробегая по чужой краске, подхватывает её цвет; следы смешиваются как пигмент.
+// Отрисовка: краска с толщиной (объём, блеск), бегущие бусины — поверх, с настоящей сферической нормалью.
 import { GL, NOISE, PAINTS, absorb } from '../core/gl.js';
 import { tone, noise, panFor } from '../core/audio.js';
 import { haptic } from '../core/haptics.js';
 
 const rnd = (a, b) => a + Math.random() * (b - a);
-const GRID = 170;     // клеток течения по короткой стороне (клетка ≈ ширина ручейка)
-const DRY_GRID = 640; // сухой след — в высоком разрешении, чтобы края были чёткими
-const SUB = 3;        // шагов течения за кадр (60 Гц)
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const MAX_HEADS = 64;
+const CELL = 6; // клетка «карты цвета» для подхвата цвета (CSS-пиксели)
 
 const H = `#version 300 es
 precision highp float;
@@ -19,75 +22,72 @@ in vec2 vUv;
 out vec4 o;
 `;
 
-const FS = {
-  // Течение мокрой краски: rgb — КОЛИЧЕСТВО пигмента (плотность × толщина), a — толщина слоя.
-  // Храним количество, а не концентрацию — тогда на краях цвета не «пачкаются» соседями.
-  flow: H + NOISE + `
-uniform sampler2D uWet; uniform vec2 uT; uniform float uK; uniform float uThr; uniform float uC; uniform float uLoss; uniform float uSeed; uniform float uCols;
-float spd(float x) { return 0.3 + 1.1 * vnoise(vec2(x * uCols, uSeed)); }
-float thr(float x) { return uThr * (0.65 + 0.7 * vnoise(vec2(x * uCols * 1.7 + 11.0, uSeed + 3.0))); }
-float down(vec4 c, float x) { return max(0.0, c.a - thr(x)) * uK * spd(x); }
-// сколько краски уходит из клетки толщины a к более толстой соседке b (ручейки «стягивают» краску)
-float pull(float a, float b) { return (a > 0.02 && a < 0.7 && b > a) ? clamp((b - a) * uC, 0.0, a * 0.18) : 0.0; }
-vec3 conc(vec4 c) { return c.a > 1e-4 ? c.rgb / c.a : vec3(0); }
-void main() {
-  vec4 C = texture(uWet, vUv);
-  vec4 A = texture(uWet, vUv + vec2(0, uT.y));
-  vec4 L = texture(uWet, vUv - vec2(uT.x, 0));
-  vec4 R = texture(uWet, vUv + vec2(uT.x, 0));
-  if (vUv.y + uT.y > 1.0) A = vec4(0);
-  if (vUv.x - uT.x < 0.0) L = vec4(0);
-  if (vUv.x + uT.x > 1.0) R = vec4(0);
-  float oC = down(C, vUv.x);
-  float oA = down(A, vUv.x);
-  float outL = pull(C.a, L.a), outR = pull(C.a, R.a);
-  float inL = pull(L.a, C.a), inR = pull(R.a, C.a);
-  float keep = max(0.0, C.a - oC - outL - outR);
-  float na = keep + oA + inL + inR;
-  vec3 mass = conc(C) * keep + conc(A) * oA + conc(L) * inL + conc(R) * inR;
-  // тонкий неподвижный слой понемногу высыхает (пигмент уходит вместе с толщиной)
-  float dried = max(0.0, na - uLoss * (1.0 + 2.0 * step(na, 0.08)));
-  mass *= na > 1e-4 ? dried / na : 0.0;
-  o = vec4(mass, dried);
-}`,
-  // Сухой след: где прошла мокрая краска, остаётся матовое пятно её цвета.
-  dry: H + `
-uniform sampler2D uDry; uniform sampler2D uWet; uniform float uRate;
-void main() {
-  vec4 d = texture(uDry, vUv), w = texture(uWet, vUv);
-  float k = smoothstep(0.06, 0.2, w.a) * uRate;
-  vec3 c = w.a > 1e-3 ? w.rgb / w.a : vec3(0);
-  vec3 D = mix(d.rgb, c * 0.82, k);   // высохшая краска чуть светлее мокрой
-  o = vec4(D, max(d.a, step(0.02, w.a)));
-}`,
-  // Клякса краски: добавляем толщину и смешиваем цвет пропорционально количеству.
-  splat: H + NOISE + `
-uniform sampler2D uWet; uniform vec2 uPoint; uniform vec3 uInk; uniform float uR; uniform float uAmt; uniform vec2 uAspect; uniform float uSeed;
-void main() {
-  vec4 C = texture(uWet, vUv);
-  vec2 d = (vUv - uPoint) * uAspect;
-  float n = fbm(d / sqrt(uR) * 1.4 + uSeed);
-  float r = length(d) / sqrt(uR) / (0.8 + 0.4 * n);
-  float add = uAmt * pow(max(0.0, 1.0 - r * r), 1.5);   // купол: в центре толще всего
-  o = vec4(C.rgb + uInk * add, C.a + add);
-}`,
-  // Показ: сухой след + мокрая краска с блеском и объёмом.
-  display: H + `
-uniform sampler2D uWet; uniform sampler2D uDry; uniform vec2 uT;
-void main() {
-  vec4 w = texture(uWet, vUv), d = texture(uDry, vUv);
-  vec3 D = d.rgb;
-  float cov = smoothstep(0.07, 0.17, w.a);   // гладкий край ручейков и капель
-  D = mix(D, w.rgb / max(w.a, 1e-3), cov);
-  vec3 col = exp(-D);
-  // объём мокрой краски: нормаль по толщине, свет сверху-слева
-  float hL = texture(uWet, vUv - vec2(uT.x, 0)).a, hR = texture(uWet, vUv + vec2(uT.x, 0)).a;
-  float hB = texture(uWet, vUv - vec2(0, uT.y)).a, hT = texture(uWet, vUv + vec2(0, uT.y)).a;
-  vec3 n = normalize(vec3((hL - hR) * 1.6, (hB - hT) * 1.6, 1.0));
-  vec3 l = normalize(vec3(-0.45, 0.6, 0.65));
+// Общая функция освещения краски
+const SHADE = `
+vec3 shade(vec3 col, vec3 n) {
+  vec3 l = normalize(vec3(-0.45, 0.62, 0.65));
   float diff = clamp(dot(n, l), 0.0, 1.0);
-  float spec = pow(max(dot(reflect(-l, n), vec3(0, 0, 1)), 0.0), 36.0);
-  col = mix(col, col * (0.72 + 0.4 * diff) + spec * 0.55, cov);
+  float spec = pow(max(dot(reflect(-l, n), vec3(0, 0, 1)), 0.0), 40.0);
+  return col * (0.7 + 0.42 * diff) + spec * 0.55;
+}
+`;
+
+const FS = {
+  // Мазок краски: капсула от A до B (радиусы rA→rB) или круг с неровным краем (uNoise > 0).
+  // rgb — количество пигмента, a — толщина. Пересекаясь, краски смешиваются.
+  stamp: H + NOISE + `
+uniform sampler2D uTmp; uniform vec2 uOrigin; uniform float uS;
+uniform vec2 uA; uniform vec2 uB; uniform float uRA; uniform float uRB;
+uniform vec3 uInk; uniform float uAmt; uniform float uNoise; uniform float uSeed;
+void main() {
+  vec2 px = gl_FragCoord.xy;
+  vec4 c = texture(uTmp, (px - uOrigin) / uS);
+  vec2 ab = uB - uA;
+  float t = clamp(dot(px - uA, ab) / max(dot(ab, ab), 1e-4), 0.0, 1.0);
+  float r = mix(uRA, uRB, t);
+  vec2 d = px - (uA + ab * t);
+  if (uNoise > 0.0) {
+    float ang = atan(d.y, d.x);
+    r *= 1.0 + uNoise * (fbm(vec2(cos(ang), sin(ang)) * 1.8 + uSeed) - 0.5);
+  }
+  float dist = length(d);
+  if (dist < r + 1.0) {
+    float q = clamp(dist / r, 0.0, 1.0);
+    float add = uAmt * sqrt(1.0 - q * q) * clamp(r + 0.5 - dist, 0.0, 1.0);  // купол + сглаживание края
+    vec3 co = c.a > 1e-3 ? c.rgb / c.a : uInk;
+    float tm = c.a > 1e-3 ? clamp(add / (c.a + add) * 1.3, 0.0, 1.0) : 1.0;
+    vec3 cn = mix(co, uInk, tm);
+    float an = max(c.a, add) + 0.12 * min(c.a, add);
+    c = vec4(cn * an, an);
+  }
+  o = c;
+}`,
+  display: H + SHADE + `
+uniform sampler2D uP; uniform vec2 uT; uniform vec2 uRes;
+uniform int uN; uniform vec4 uBead[${MAX_HEADS}]; uniform vec4 uBeadInk[${MAX_HEADS}];
+void main() {
+  vec4 p = texture(uP, vUv);
+  vec3 conc = p.rgb / max(p.a, 1e-3);
+  float cov = smoothstep(0.004, 0.05, p.a);
+  float hL = texture(uP, vUv - vec2(uT.x, 0)).a, hR = texture(uP, vUv + vec2(uT.x, 0)).a;
+  float hB = texture(uP, vUv - vec2(0, uT.y)).a, hT = texture(uP, vUv + vec2(0, uT.y)).a;
+  vec3 n = normalize(vec3((hL - hR) * 2.0, (hB - hT) * 2.0, 1.0));
+  vec3 col = mix(vec3(1.0), shade(exp(-conc), n), cov);
+  // бегущие капли-бусины поверх
+  vec2 px = vUv * uRes;
+  for (int i = 0; i < ${MAX_HEADS}; i++) {
+    if (i >= uN) break;
+    vec4 b = uBead[i];
+    vec2 d = px - b.xy;
+    if (abs(d.x) > b.z + 1.0 || abs(d.y) > b.z * 1.25 + 1.0) continue;
+    d.y /= 1.15;                       // капля чуть вытянута вниз
+    float q = dot(d, d) / (b.z * b.z);
+    if (q < 1.0) {
+      vec3 nb = normalize(vec3(-d / b.z * 1.1, sqrt(1.0 - q)));
+      float a = clamp((1.0 - sqrt(q)) * b.z, 0.0, 1.0);
+      col = mix(col, shade(exp(-uBeadInk[i].rgb), nb), a);
+    }
+  }
   o = vec4(col, 1);
 }`,
   copy: H + `
@@ -109,51 +109,98 @@ export default class DripGame {
     this.g = new GL(stage.canvas);
     this.P = {};
     for (const [k, src] of Object.entries(FS)) this.P[k] = this.g.program(src);
-    this.queue = [];
-    this.held = new Map();
+    this.blobs = [];   // кляксы-«резервуары», из которых рождаются подтёки
+    this.heads = [];   // бегущие капли
     this.time = 0;
-    this.acc = 0;
     this.colorIdx = Math.floor(Math.random() * PAINTS.length);
-    this.lastPaint = -99;
-    this.nextDrip = 0;
-    this.seed = Math.random() * 100;
     this.build();
   }
 
   get u() { return this.stage.unit; }
 
-  build(prev = null, map = null) {
+  build(old = null, map = null) {
     const g = this.g;
     const { width, height } = this.stage.canvas;
-    const short = Math.min(width, height);
-    const gw = Math.round((GRID * width) / short), gh = Math.round((GRID * height) / short);
-    const oldWet = this.wet, oldDry = this.dry;
-    this.wet = g.double(gw, gh, 'f16');
-    const dw = Math.round((DRY_GRID * width) / short), dh = Math.round((DRY_GRID * height) / short);
-    this.dry = g.double(dw, dh, 'f16');
-    this.aspect = [width / short, height / short];
-    if (prev) {
-      g.run(this.P.copy, { uSrc: oldWet.read, uMap: map }, this.wet.write); this.wet.swap();
-      g.run(this.P.copy, { uSrc: oldDry.read, uMap: map }, this.dry.write); this.dry.swap();
-    }
-    g.free(oldWet); g.free(oldDry);
+    const prev = this.paint;
+    this.paint = g.target(width, height, 'f16');
+    this.k = width / this.stage.w; // CSS → пиксели текстуры
+    const S = Math.ceil(this.u * 0.16 * this.k * 2) + 8;
+    g.free(this.tmp);
+    this.tmp = g.target(S, S, 'f16');
+    this.S = S;
+    if (old && prev) g.run(this.P.copy, { uSrc: prev, uMap: map }, this.paint);
+    g.free(prev);
+    // карта цвета (CPU) — чтобы капля подхватывала цвет чужой краски
+    this.cw = Math.ceil(this.stage.w / CELL); this.ch = Math.ceil(this.stage.h / CELL);
+    this.cmap = new Float32Array(this.cw * this.ch * 4);
   }
 
-  toUv(x, y) { return [x / this.stage.w, 1 - y / this.stage.h]; }
+  // ---------- Рисование в текстуру ----------
+
+  /** Капсула (или круг) в CSS-координатах: A(x0,y0,r0) → B(x1,y1,r1). */
+  stamp(x0, y0, r0, x1, y1, r1, ink, amt, noiseK = 0) {
+    const g = this.g, gl = g.gl, k = this.k, W = this.paint.w, Hh = this.paint.h, S = this.S;
+    const ax = x0 * k, ay = Hh - y0 * k, bx = x1 * k, by = Hh - y1 * k;
+    const R = Math.max(r0, r1) * k * (1 + noiseK * 0.6) + 2;
+    const minx = Math.floor(Math.min(ax, bx) - R), miny = Math.floor(Math.min(ay, by) - R);
+    const maxx = Math.ceil(Math.max(ax, bx) + R), maxy = Math.ceil(Math.max(ay, by) + R);
+    if (maxx - minx > S || maxy - miny > S) return; // слишком большой кусок за раз — пропускаем
+    const sx0 = Math.max(0, minx), sy0 = Math.max(0, miny), sx1 = Math.min(W, maxx), sy1 = Math.min(Hh, maxy);
+    if (sx1 <= sx0 || sy1 <= sy0) return;
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, this.paint.fb);
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, this.tmp.fb);
+    gl.blitFramebuffer(sx0, sy0, sx1, sy1, sx0 - minx, sy0 - miny, sx1 - minx, sy1 - miny, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+    gl.enable(gl.SCISSOR_TEST);
+    gl.scissor(sx0, sy0, sx1 - sx0, sy1 - sy0);
+    g.run(this.P.stamp, {
+      uTmp: this.tmp, uOrigin: [minx, miny], uS: S, uA: [ax, ay], uB: [bx, by], uRA: r0 * k, uRB: r1 * k,
+      uInk: ink, uAmt: amt, uNoise: noiseK, uSeed: Math.random() * 40,
+    }, this.paint);
+    gl.disable(gl.SCISSOR_TEST);
+    this.markColor(x1, y1, Math.max(r0, r1), ink);
+  }
+
+  markColor(x, y, r, ink) {
+    const c0 = Math.max(0, Math.floor((x - r) / CELL)), c1 = Math.min(this.cw - 1, Math.floor((x + r) / CELL));
+    const r0 = Math.max(0, Math.floor((y - r) / CELL)), r1 = Math.min(this.ch - 1, Math.floor((y + r) / CELL));
+    for (let j = r0; j <= r1; j++) for (let i = c0; i <= c1; i++) {
+      const o = (j * this.cw + i) * 4;
+      this.cmap[o] = ink[0]; this.cmap[o + 1] = ink[1]; this.cmap[o + 2] = ink[2]; this.cmap[o + 3] = 1;
+    }
+  }
+
+  colorAt(x, y) {
+    const i = Math.floor(x / CELL), j = Math.floor(y / CELL);
+    if (i < 0 || j < 0 || i >= this.cw || j >= this.ch) return null;
+    const o = (j * this.cw + i) * 4;
+    return this.cmap[o + 3] ? [this.cmap[o], this.cmap[o + 1], this.cmap[o + 2]] : null;
+  }
 
   // ---------- Касания ----------
 
-  onDown(p) {
-    const ink = absorb(PAINTS[this.colorIdx].map((v) => Math.min(1, Math.max(0.03, v + rnd(-0.04, 0.04))))).map((v) => v * 1.25);
+  freshInk() {
+    const c = PAINTS[this.colorIdx].map((v) => clamp(v + rnd(-0.03, 0.03), 0.03, 1));
     this.colorIdx = (this.colorIdx + 1) % PAINTS.length;
+    return absorb(c).map((v) => v * 1.1);
+  }
+
+  addBlob(x, y, r, ink) {
+    const b = { x, y, r, r0: r, ink, vol: r * r, next: this.time + rnd(0.15, 0.5), held: false };
+    this.blobs.push(b);
+    this.stamp(x, y, r, x, y, r, ink, 1.0, 0.35);
+    return b;
+  }
+
+  onDown(p) {
+    const ink = this.freshInk();
+    const b = this.addBlob(p.x, p.y, this.u * rnd(0.034, 0.048), ink);
+    b.held = true;
+    p.data.b = b;
     p.data.ink = ink;
-    p.data.t0 = this.time;
     p.data.last = { x: p.x, y: p.y };
-    this.held.set(p.id, p);
-    this.queue.push({ x: p.x, y: p.y, ink, r: 0.0016, amt: 1.5 });
-    this.lastPaint = this.time;
     const pan = panFor(p.x, this.stage.w);
-    // «шлёп» краски о стену
     noise({ dur: 0.16, gain: 0.22, type: 'lowpass', freq: 1400, to: 300, q: 0.8, pan, wet: 0.4 });
     tone({ freq: 160, to: 90, dur: 0.12, type: 'sine', gain: 0.22, attack: 0.003, pan, wet: 0.3 });
     haptic(1);
@@ -161,74 +208,151 @@ export default class DripGame {
 
   onMove(p) {
     const l = p.data.last;
-    const step = this.u * 0.012;
+    const step = this.u * 0.022;
     const d = Math.hypot(p.x - l.x, p.y - l.y);
     if (d < step) return;
-    const n = Math.min(12, Math.floor(d / step));
+    if (p.data.b) { p.data.b.held = false; p.data.b = null; }
+    const r = this.u * 0.017;
+    // мазок — лента краски; на нём в случайных местах рождаются подтёки
+    this.stamp(l.x, l.y, r, p.x, p.y, r, p.data.ink, 0.85);
+    const n = Math.floor(d / step);
     for (let i = 1; i <= n; i++) {
-      const k = i / n;
-      this.queue.push({ x: l.x + (p.x - l.x) * k, y: l.y + (p.y - l.y) * k, ink: p.data.ink, r: 0.0005, amt: 0.45 });
-    }
-    p.data.last = { x: p.x, y: p.y };
-    p.data.t0 = this.time; // пока ведём — это мазок, а не «наливание»
-    this.lastPaint = this.time;
-    if (Math.random() < 0.25) noise({ dur: 0.08, gain: 0.05, type: 'bandpass', freq: 900, q: 1, pan: panFor(p.x, this.stage.w), wet: 0.2 });
-  }
-
-  onUp(p) { this.held.delete(p.id); }
-
-  // ---------- Симуляция ----------
-
-  simulate() {
-    const g = this.g, P = this.P;
-    for (const q of this.queue) {
-      const [u, v] = this.toUv(q.x, q.y);
-      g.step(P.splat, { uWet: this.wet, uPoint: [u, v], uInk: q.ink, uR: q.r, uAmt: q.amt, uAspect: this.aspect, uSeed: Math.random() * 40 }, this.wet);
-    }
-    this.queue.length = 0;
-    // удержание: краски становится всё больше
-    for (const p of this.held.values()) {
-      if (this.time - p.data.t0 > 0.3) {
-        const [u, v] = this.toUv(p.x, p.y);
-        g.step(P.splat, { uWet: this.wet, uPoint: [u, v], uInk: p.data.ink, uR: 0.001, uAmt: 0.05, uAspect: this.aspect, uSeed: Math.random() * 40 }, this.wet);
-        this.lastPaint = this.time;
+      if (Math.random() < 0.26) {
+        const k = i / n;
+        this.blobs.push({
+          x: l.x + (p.x - l.x) * k + rnd(-r, r) * 0.5, y: l.y + (p.y - l.y) * k, r, r0: r, ink: p.data.ink,
+          vol: r * r * rnd(1.4, 2.8), next: this.time + rnd(0.1, 0.9), held: false, small: true,
+        });
       }
     }
-    for (let i = 0; i < SUB; i++) {
-      g.step(P.flow, { uWet: this.wet, uT: this.wet.texel, uK: 0.32, uThr: 0.36, uC: 0.09, uLoss: 0.0006, uSeed: this.seed, uCols: this.wet.w / 7 }, this.wet);
-      g.step(P.dry, { uDry: this.dry, uWet: this.wet, uRate: 0.04 }, this.dry);
-    }
+    p.data.last = { x: p.x, y: p.y };
+    if (Math.random() < 0.3) noise({ dur: 0.08, gain: 0.05, type: 'bandpass', freq: 900, q: 1, pan: panFor(p.x, this.stage.w), wet: 0.2 });
   }
+
+  onUp(p) {
+    if (p.data.b) p.data.b.held = false;
+  }
+
+  // ---------- Капли ----------
+
+  spawnHead(b) {
+    // место — у нижнего края кляксы, чаще ближе к середине
+    const off = (Math.random() + Math.random() - 1) * 0.8;
+    const x = b.x + off * b.r;
+    const y = b.y + b.r * Math.sqrt(Math.max(0, 1 - off * off)) * 0.85;
+    const v = Math.min(b.vol, b.r * b.r * rnd(0.25, 0.55) * (b.small ? 1.4 : 1));
+    b.vol -= v;
+    if (this.heads.length >= MAX_HEADS) return;
+    this.heads.push({ x, y, px: x, py: y, v, vy: 0, ink: b.ink.slice(), seed: rnd(0, 100), r0: b.r });
+  }
+
+  width(v) { return clamp(Math.sqrt(Math.max(v, 0)) * 0.38, 1.8, this.u * 0.017); }
 
   update(dt) {
     this.time += dt;
-    this.acc += dt;
-    let n = 0;
-    while (this.acc >= 1 / 60 && n < 2) { this.simulate(); this.acc -= 1 / 60; n++; }
-    if (n === 2) this.acc = 0;
-    // тихое «кап… кап…», пока краска свежая и течёт
-    if (this.time - this.lastPaint < 7 && this.time > this.nextDrip) {
-      this.nextDrip = this.time + rnd(0.35, 1.1);
-      const f = rnd(700, 1300);
-      tone({ freq: f, to: f * 1.6, dur: 0.06, type: 'sine', gain: 0.06, attack: 0.003, pan: rnd(-0.6, 0.6), wet: 0.8 });
+    dt = Math.min(dt, 1 / 30);
+    const u = this.u;
+
+    // кляксы: удержание наливает краску; пока краски много — рождаются подтёки
+    for (const b of this.blobs) {
+      if (b.held) {
+        b.vol += b.r0 * b.r0 * 1.4 * dt;
+        const nr = Math.min(b.r0 * 1.7, b.r + u * 0.02 * dt);
+        if (nr - b.r > 0.6) { b.r = nr; this.stamp(b.x, b.y, b.r, b.x, b.y, b.r, b.ink, 1.0, 0.35); }
+      }
+      if (this.time > b.next && b.vol > b.r0 * b.r0 * 0.3) {
+        this.spawnHead(b);
+        b.next = this.time + rnd(0.25, 0.9) * (b.held ? 0.6 : 1);
+      }
     }
+    this.blobs = this.blobs.filter((b) => b.held || b.vol > b.r0 * b.r0 * 0.3);
+
+    // бегущие капли
+    for (const h of this.heads) {
+      const w = this.width(h.v);
+      const full = clamp((h.v - 8) / (u * u * 0.0006), 0, 1.6);
+      const target = u * 0.03 + u * 0.4 * full;
+      h.vy += (target - h.vy) * Math.min(1, dt * 3);
+      const dy = h.vy * dt;
+      // извилистый путь: плавный шум по высоте, у каждой капли свой
+      const wob = (Math.sin(h.y * 0.03 + h.seed) + Math.sin(h.y * 0.011 + h.seed * 2.1) * 0.6) * 0.11;
+      h.px = h.x; h.py = h.y;
+      h.x += wob * dy * 0.5;
+      h.y += dy;
+      // по пути краска уходит в след
+      const spent = 2 * w * dy * 0.2;
+      h.v -= spent;
+      // подхват цвета: бежим по чужой краске — понемногу перенимаем её цвет
+      const c = this.colorAt(h.x, h.y + w * 2);
+      if (c) for (let i = 0; i < 3; i++) h.ink[i] += (c[i] - h.ink[i]) * Math.min(1, dt * 1.2);
+      // «шейка» у кляксы: в самом начале подтёк чуть шире; ширина следа непрерывна от кусочка к кусочку
+      h.run = (h.run || 0) + dy;
+      const neck = 1 + 0.3 * Math.max(0, 1 - h.run / (h.r0 * 1.2));
+      const wNow = w * neck;
+      this.stamp(h.px, h.py, h.lastW || wNow, h.x, h.y, wNow, h.ink, 0.62);
+      h.lastW = wNow;
+    }
+
+    // слияние соседних капель
+    for (let i = 0; i < this.heads.length; i++) for (let j = i + 1; j < this.heads.length; j++) {
+      const a = this.heads[i], b = this.heads[j];
+      if (a.dead || b.dead) continue;
+      const wa = this.width(a.v), wb = this.width(b.v);
+      if (Math.abs(a.x - b.x) < (wa + wb) * 0.9 && Math.abs(a.y - b.y) < (wa + wb) * 2.5) {
+        const [big, small] = a.v >= b.v ? [a, b] : [b, a];
+        const t = small.v / (big.v + small.v);
+        for (let k = 0; k < 3; k++) big.ink[k] += (small.ink[k] - big.ink[k]) * t;
+        big.v += small.v;
+        big.y = Math.max(big.y, small.y);
+        small.dead = true;
+      }
+    }
+
+    // остановилась или ушла за край — оставляем бусину и «кап»
+    for (const h of this.heads) {
+      if (h.dead) continue;
+      if (h.v <= 8 || h.y > this.stage.h + 20) {
+        if (h.y <= this.stage.h) {
+          const rb = this.width(Math.max(h.v, 8)) * 1.6 + 1.2;
+          this.stamp(h.x, h.y, rb, h.x, h.y + rb * 0.15, rb, h.ink, 1.05);
+          const f = rnd(800, 1400);
+          tone({ freq: f, to: f * 1.6, dur: 0.06, type: 'sine', gain: 0.07, attack: 0.003, pan: panFor(h.x, this.stage.w), wet: 0.8 });
+        }
+        h.dead = true;
+      }
+    }
+    this.heads = this.heads.filter((h) => !h.dead);
   }
 
   erase() {
-    this.g.clear(this.wet);
-    this.g.clear(this.dry);
+    this.g.clear(this.paint);
+    this.heads = [];
+    this.blobs = [];
+    this.cmap.fill(0);
     noise({ dur: 0.7, gain: 0.14, type: 'bandpass', freq: 600, to: 2500, q: 0.7, wet: 0.8 });
   }
 
   resize(prev, next) {
     const s = Math.min(next.w / prev.w, next.h / prev.h);
     const sw = (prev.w * s) / next.w, sh = (prev.h * s) / next.h;
+    const ox = (next.w - prev.w * s) / 2, oy = (next.h - prev.h * s) / 2;
+    for (const o of [...this.heads, ...this.blobs]) { o.x = o.x * s + ox; o.y = o.y * s + oy; if (o.r) { o.r *= s; o.r0 *= s; } }
     this.build(true, [(1 - sw) / 2, (1 - sh) / 2, sw, sh]);
   }
 
   draw() {
     const { width, height } = this.stage.canvas;
-    this.g.run(this.P.display, { uWet: this.wet, uDry: this.dry, uT: this.wet.texel }, null, width, height);
+    const bead = new Float32Array(MAX_HEADS * 4), bink = new Float32Array(MAX_HEADS * 4);
+    const k = this.k;
+    this.heads.forEach((h, i) => {
+      const rb = this.width(h.v) * 1.6 + 1.2;
+      bead.set([h.x * k, height - (h.y + rb * 0.2) * k, rb * k, 0], i * 4);
+      bink.set([h.ink[0], h.ink[1], h.ink[2], 0], i * 4);
+    });
+    this.g.run(this.P.display, {
+      uP: this.paint, uT: this.paint.texel, uRes: [width, height],
+      uN: { i: this.heads.length }, uBead: bead, uBeadInk: bink,
+    }, null, width, height);
   }
 
   destroy() { this.g.destroy(); }
