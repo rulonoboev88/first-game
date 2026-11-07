@@ -10,6 +10,8 @@ export const GAMES = [
     load: () => import('./bubbles.js') },
   { id: 'paint',     ready: true,  bg: '#FFE9EC', label: { uk: 'Фарби', ru: 'Краски', en: 'Paint' },
     load: () => import('./paint.js') },
+  { id: 'ink', ready: true, bg: '#E7F5FF', label: { uk: 'Чорнило у воді', ru: 'Чернила в воде', en: 'Ink in water' },
+    load: () => import('./ink.js') },
   { id: 'blocks',    ready: true,  bg: '#E6F8E8', label: { uk: 'Кубики', ru: 'Кубики', en: 'Blocks' },
     load: () => import('./blocks.js') },
   { id: 'draw',      ready: true,  bg: '#F1EAFF', label: { uk: 'Малювалка', ru: 'Рисовалка', en: 'Drawing' },

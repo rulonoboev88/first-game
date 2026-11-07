@@ -187,6 +187,50 @@ export const ICONS = {
     ctx.stroke();
   },
 
+  ink(ctx, S) {
+    // клубы чернил в воде
+    ctx.globalCompositeOperation = 'multiply';
+    const blob = (x, y, r, c) => { const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, c); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); };
+    blob(S * 0.4, S * 0.45, S * 0.3, 'rgba(51,154,240,0.95)');
+    blob(S * 0.62, S * 0.58, S * 0.28, 'rgba(240,101,149,0.9)');
+    blob(S * 0.5, S * 0.32, S * 0.2, 'rgba(252,196,25,0.9)');
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = S * 0.03; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(S * 0.5, S * 0.5, S * 0.16, 0.3, 3.6); ctx.stroke();
+    ctx.beginPath(); ctx.arc(S * 0.5, S * 0.5, S * 0.06, 2.5, 5.6); ctx.stroke();
+  },
+
+  drip(ctx, S) {
+    const cols = ['#FF6B6B', '#FCC419', '#339AF0'];
+    cols.forEach((c, i) => {
+      const x = S * (0.28 + i * 0.22), len = S * (0.3 + (i % 2) * 0.18);
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.moveTo(x - S * 0.09, S * 0.18);
+      ctx.lineTo(x + S * 0.09, S * 0.18);
+      ctx.lineTo(x + S * 0.04, S * 0.18 + len);
+      ctx.arc(x, S * 0.18 + len, S * 0.05, 0, Math.PI);
+      ctx.closePath();
+      ctx.fill();
+    });
+    ctx.fillStyle = '#FF6B6B'; ctx.fillRect(S * 0.12, S * 0.12, S * 0.76, S * 0.1);
+  },
+
+  finger(ctx, S) {
+    const lw = S * 0.026;
+    // мазки гуаши
+    ctx.lineCap = 'round';
+    [['#FCC419', 0.62], ['#51CF66', 0.74], ['#339AF0', 0.86]].forEach(([c, y]) => {
+      ctx.strokeStyle = c; ctx.lineWidth = S * 0.11;
+      ctx.beginPath(); ctx.moveTo(S * 0.14, S * y); ctx.quadraticCurveTo(S * 0.5, S * (y - 0.1), S * 0.86, S * y); ctx.stroke();
+    });
+    // пальчик
+    ctx.fillStyle = '#FFD8B5'; ctx.strokeStyle = INK; ctx.lineWidth = lw;
+    ctx.beginPath(); ctx.roundRect(S * 0.42, S * 0.12, S * 0.18, S * 0.46, S * 0.09); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#FF6B6B';
+    ctx.beginPath(); ctx.ellipse(S * 0.51, S * 0.5, S * 0.07, S * 0.06, 0, 0, Math.PI * 2); ctx.fill();
+  },
+
   surprise(ctx, S) {
     const lw = S * 0.028;
     roundRect(ctx, S * 0.2, S * 0.42, S * 0.6, S * 0.4, S * 0.05, '#F783AC', lw);
