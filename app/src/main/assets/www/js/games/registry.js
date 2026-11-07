@@ -14,6 +14,8 @@ export const GAMES = [
     load: () => import('./ink.js') },
   { id: 'drip', ready: true, bg: '#FFF0F0', label: { uk: 'Стікаюча фарба', ru: 'Стекающая краска', en: 'Dripping paint' },
     load: () => import('./drip.js') },
+  { id: 'finger', ready: true, bg: '#FFF3E0', label: { uk: 'Пальчикові фарби', ru: 'Пальчиковые краски', en: 'Finger paint' },
+    load: () => import('./finger.js') },
   { id: 'blocks',    ready: true,  bg: '#E6F8E8', label: { uk: 'Кубики', ru: 'Кубики', en: 'Blocks' },
     load: () => import('./blocks.js') },
   { id: 'draw',      ready: true,  bg: '#F1EAFF', label: { uk: 'Малювалка', ru: 'Рисовалка', en: 'Drawing' },
