@@ -27,8 +27,8 @@ const SHADE = `
 vec3 shade(vec3 col, vec3 n) {
   vec3 l = normalize(vec3(-0.45, 0.62, 0.65));
   float diff = clamp(dot(n, l), 0.0, 1.0);
-  float spec = pow(max(dot(reflect(-l, n), vec3(0, 0, 1)), 0.0), 40.0);
-  return col * (0.7 + 0.42 * diff) + spec * 0.55;
+  float spec = pow(max(dot(reflect(-l, n), vec3(0, 0, 1)), 0.0), 30.0);
+  return col * (0.8 + 0.28 * diff) + spec * 0.32;
 }
 `;
 
@@ -53,7 +53,8 @@ void main() {
   float dist = length(d);
   if (dist < r + 1.0) {
     float q = clamp(dist / r, 0.0, 1.0);
-    float add = uAmt * sqrt(1.0 - q * q) * clamp(r + 0.5 - dist, 0.0, 1.0);  // купол + сглаживание края
+    // плоская плёнка краски со скруглённым краем (а не «трубочка»)
+    float add = uAmt * sqrt(1.0 - pow(q, 6.0)) * clamp(r + 0.5 - dist, 0.0, 1.0);
     vec3 co = c.a > 1e-3 ? c.rgb / c.a : uInk;
     float tm = c.a > 1e-3 ? clamp(add / (c.a + add) * 1.3, 0.0, 1.0) : 1.0;
     vec3 cn = mix(co, uInk, tm);
@@ -71,7 +72,7 @@ void main() {
   float cov = smoothstep(0.004, 0.05, p.a);
   float hL = texture(uP, vUv - vec2(uT.x, 0)).a, hR = texture(uP, vUv + vec2(uT.x, 0)).a;
   float hB = texture(uP, vUv - vec2(0, uT.y)).a, hT = texture(uP, vUv + vec2(0, uT.y)).a;
-  vec3 n = normalize(vec3((hL - hR) * 2.0, (hB - hT) * 2.0, 1.0));
+  vec3 n = normalize(vec3((hL - hR) * 1.6, (hB - hT) * 1.6, 1.0));
   vec3 col = mix(vec3(1.0), shade(exp(-conc), n), cov);
   // бегущие капли-бусины поверх
   vec2 px = vUv * uRes;
@@ -83,7 +84,7 @@ void main() {
     d.y /= 1.15;                       // капля чуть вытянута вниз
     float q = dot(d, d) / (b.z * b.z);
     if (q < 1.0) {
-      vec3 nb = normalize(vec3(-d / b.z * 1.1, sqrt(1.0 - q)));
+      vec3 nb = normalize(vec3(-d / b.z * 0.7, 1.0));
       float a = clamp((1.0 - sqrt(q)) * b.z, 0.0, 1.0);
       col = mix(col, shade(exp(-uBeadInk[i].rgb), nb), a);
     }
@@ -186,10 +187,13 @@ export default class DripGame {
     return absorb(c).map((v) => v * 1.1);
   }
 
-  addBlob(x, y, r, ink) {
-    const b = { x, y, r, r0: r, ink, vol: r * r, next: this.time + rnd(0.15, 0.5), held: false };
+  /** Клякса: сразу планируем 1–3 подтёка в разных местах нижнего края. */
+  addBlob(x, y, r, ink, { count = null, small = false } = {}) {
+    const b = { x, y, r, r0: r, ink, held: false, small, spots: [], plan: [] };
+    const n = count != null ? count : 1 + Math.floor(Math.random() * 2.6);
+    for (let i = 0; i < n; i++) b.plan.push(this.time + rnd(0.15, 1.2));
     this.blobs.push(b);
-    this.stamp(x, y, r, x, y, r, ink, 1.0, 0.35);
+    if (!small) this.stamp(x, y, r, x, y, r, ink, 0.55, 0.35);
     return b;
   }
 
@@ -197,6 +201,7 @@ export default class DripGame {
     const ink = this.freshInk();
     const b = this.addBlob(p.x, p.y, this.u * rnd(0.034, 0.048), ink);
     b.held = true;
+    b.heldT = 0;
     p.data.b = b;
     p.data.ink = ink;
     p.data.last = { x: p.x, y: p.y };
@@ -208,22 +213,18 @@ export default class DripGame {
 
   onMove(p) {
     const l = p.data.last;
-    const step = this.u * 0.022;
+    const step = this.u * 0.02;
     const d = Math.hypot(p.x - l.x, p.y - l.y);
     if (d < step) return;
     if (p.data.b) { p.data.b.held = false; p.data.b = null; }
-    const r = this.u * 0.017;
-    // мазок — лента краски; на нём в случайных местах рождаются подтёки
-    this.stamp(l.x, l.y, r, p.x, p.y, r, p.data.ink, 0.85);
-    const n = Math.floor(d / step);
-    for (let i = 1; i <= n; i++) {
-      if (Math.random() < 0.26) {
-        const k = i / n;
-        this.blobs.push({
-          x: l.x + (p.x - l.x) * k + rnd(-r, r) * 0.5, y: l.y + (p.y - l.y) * k, r, r0: r, ink: p.data.ink,
-          vol: r * r * rnd(1.4, 2.8), next: this.time + rnd(0.1, 0.9), held: false, small: true,
-        });
-      }
+    const r = this.u * 0.016;
+    // мазок — лента краски; на ней в случайных местах (не слишком тесно) рождаются подтёки
+    this.stamp(l.x, l.y, r, p.x, p.y, r, p.data.ink, 0.5);
+    p.data.dist = (p.data.dist || 0) + d;
+    if (p.data.dist > this.u * rnd(0.07, 0.16)) {
+      p.data.dist = 0;
+      const k = Math.random();
+      this.addBlob(l.x + (p.x - l.x) * k, l.y + (p.y - l.y) * k, r, p.data.ink, { count: 1, small: true });
     }
     p.data.last = { x: p.x, y: p.y };
     if (Math.random() < 0.3) noise({ dur: 0.08, gain: 0.05, type: 'bandpass', freq: 900, q: 1, pan: panFor(p.x, this.stage.w), wet: 0.2 });
@@ -236,60 +237,67 @@ export default class DripGame {
   // ---------- Капли ----------
 
   spawnHead(b) {
-    // место — у нижнего края кляксы, чаще ближе к середине
-    const off = (Math.random() + Math.random() - 1) * 0.8;
-    const x = b.x + off * b.r;
-    const y = b.y + b.r * Math.sqrt(Math.max(0, 1 - off * off)) * 0.85;
-    const v = Math.min(b.vol, b.r * b.r * rnd(0.25, 0.55) * (b.small ? 1.4 : 1));
-    b.vol -= v;
     if (this.heads.length >= MAX_HEADS) return;
-    this.heads.push({ x, y, px: x, py: y, v, vy: 0, ink: b.ink.slice(), seed: rnd(0, 100), r0: b.r });
+    // ширина подтёка задаётся при рождении (зависит от размера кляксы) и почти не меняется
+    const w0 = clamp(b.r * (b.small ? rnd(0.38, 0.55) : rnd(0.14, 0.23)), 2.2, this.u * 0.014);
+    // место — по всему нижнему краю, не ближе 2.5 ширин к соседнему подтёку этой кляксы
+    let off = 0;
+    for (let tries = 0; tries < 8; tries++) {
+      off = rnd(-0.72, 0.72);
+      const x = b.x + off * b.r;
+      if (b.spots.every((sx) => Math.abs(sx - x) > w0 * 2.5)) break;
+    }
+    const x = b.x + off * b.r;
+    b.spots.push(x);
+    // стартуем чуть ВНУТРИ кляксы — начало подтёка спрятано под ней, без «шишек»
+    const y = b.y + b.r * Math.sqrt(Math.max(0, 1 - off * off)) * 0.72;
+    // запас краски определяет длину: обычно 1–4 размера кляксы, иногда длиннее
+    const len = b.r0 * (Math.random() < 0.15 ? rnd(4, 7) : rnd(1.2, 4)) * (b.small ? 1.4 : 1) * (1 + (b.heldT || 0) * 0.4);
+    const v0 = len;
+    this.heads.push({ x, y, px: x, py: y, v: v0, v0, w0, vy: 0, ink: b.ink.slice(), seed: rnd(0, 100), base: b.r, run: 0 });
   }
 
-  width(v) { return clamp(Math.sqrt(Math.max(v, 0)) * 0.38, 1.8, this.u * 0.017); }
+  /** Ширина следа: почти постоянная, к концу самую малость тоньше. */
+  width(h) { return h.w0 * (0.82 + 0.18 * clamp(h.v / h.v0, 0, 1)); }
 
   update(dt) {
     this.time += dt;
     dt = Math.min(dt, 1 / 30);
     const u = this.u;
 
-    // кляксы: удержание наливает краску; пока краски много — рождаются подтёки
+    // кляксы: по плану рождают подтёки; удержание — клякса растёт и даёт новые
     for (const b of this.blobs) {
       if (b.held) {
-        b.vol += b.r0 * b.r0 * 1.4 * dt;
+        b.heldT += dt;
         const nr = Math.min(b.r0 * 1.7, b.r + u * 0.02 * dt);
-        if (nr - b.r > 0.6) { b.r = nr; this.stamp(b.x, b.y, b.r, b.x, b.y, b.r, b.ink, 1.0, 0.35); }
+        if (nr - b.r > 0.6) { b.r = nr; this.stamp(b.x, b.y, b.r, b.x, b.y, b.r, b.ink, 0.55, 0.35); }
+        if (b.plan.length < 2 && b.spots.length < 7) b.plan.push(this.time + rnd(0.4, 0.9));
       }
-      if (this.time > b.next && b.vol > b.r0 * b.r0 * 0.3) {
-        this.spawnHead(b);
-        b.next = this.time + rnd(0.25, 0.9) * (b.held ? 0.6 : 1);
-      }
+      while (b.plan.length && b.plan[0] <= this.time) { b.plan.shift(); this.spawnHead(b); }
     }
-    this.blobs = this.blobs.filter((b) => b.held || b.vol > b.r0 * b.r0 * 0.3);
+    this.blobs = this.blobs.filter((b) => b.held || b.plan.length);
 
-    // бегущие капли
+    // бегущие капли: быстро в начале, замедляются по мере расхода краски
     for (const h of this.heads) {
-      const w = this.width(h.v);
-      const full = clamp((h.v - 8) / (u * u * 0.0006), 0, 1.6);
-      const target = u * 0.03 + u * 0.4 * full;
-      h.vy += (target - h.vy) * Math.min(1, dt * 3);
-      const dy = h.vy * dt;
-      // извилистый путь: плавный шум по высоте, у каждой капли свой
-      const wob = (Math.sin(h.y * 0.03 + h.seed) + Math.sin(h.y * 0.011 + h.seed * 2.1) * 0.6) * 0.11;
+      const w = this.width(h);
+      const fill = clamp(h.v / h.v0, 0, 1);
+      const target = u * (0.05 + 0.3 * Math.pow(fill, 0.8));
+      h.vy += (target - h.vy) * Math.min(1, dt * 4);
+      const dy = Math.min(h.vy * dt, h.v);
+      // почти прямо вниз, с лёгкой индивидуальной извилистостью
+      const wob = (Math.sin(h.y * 0.03 + h.seed) + Math.sin(h.y * 0.011 + h.seed * 2.1) * 0.6) * 0.08;
       h.px = h.x; h.py = h.y;
-      h.x += wob * dy * 0.5;
+      h.x += wob * dy;
       h.y += dy;
-      // по пути краска уходит в след
-      const spent = 2 * w * dy * 0.2;
-      h.v -= spent;
+      h.v -= dy;
       // подхват цвета: бежим по чужой краске — понемногу перенимаем её цвет
       const c = this.colorAt(h.x, h.y + w * 2);
       if (c) for (let i = 0; i < 3; i++) h.ink[i] += (c[i] - h.ink[i]) * Math.min(1, dt * 1.2);
-      // «шейка» у кляксы: в самом начале подтёк чуть шире; ширина следа непрерывна от кусочка к кусочку
-      h.run = (h.run || 0) + dy;
-      const neck = 1 + 0.3 * Math.max(0, 1 - h.run / (h.r0 * 1.2));
-      const wNow = w * neck;
-      this.stamp(h.px, h.py, h.lastW || wNow, h.x, h.y, wNow, h.ink, 0.62);
+      // плавное расширение у основания — краска «стекает» с кляксы, а не торчит палочкой
+      h.run += dy;
+      const k = Math.max(0, 1 - h.run / (h.base * 0.9));
+      const wNow = w * (1 + 0.9 * k * k);
+      this.stamp(h.px, h.py, h.lastW || wNow, h.x, h.y, wNow, h.ink, 0.42);
       h.lastW = wNow;
     }
 
@@ -297,24 +305,26 @@ export default class DripGame {
     for (let i = 0; i < this.heads.length; i++) for (let j = i + 1; j < this.heads.length; j++) {
       const a = this.heads[i], b = this.heads[j];
       if (a.dead || b.dead) continue;
-      const wa = this.width(a.v), wb = this.width(b.v);
-      if (Math.abs(a.x - b.x) < (wa + wb) * 0.9 && Math.abs(a.y - b.y) < (wa + wb) * 2.5) {
+      const wa = this.width(a), wb = this.width(b);
+      if (Math.abs(a.x - b.x) < (wa + wb) * 0.8 && Math.abs(a.y - b.y) < (wa + wb) * 2) {
         const [big, small] = a.v >= b.v ? [a, b] : [b, a];
-        const t = small.v / (big.v + small.v);
+        const t = small.v / (big.v + small.v + 1e-3);
         for (let k = 0; k < 3; k++) big.ink[k] += (small.ink[k] - big.ink[k]) * t;
-        big.v += small.v;
+        big.v += small.v * 0.7;
+        big.v0 = Math.max(big.v0, big.v);
+        big.w0 = Math.min(u * 0.016, Math.hypot(big.w0, small.w0 * 0.6));
         big.y = Math.max(big.y, small.y);
         small.dead = true;
       }
     }
 
-    // остановилась или ушла за край — оставляем бусину и «кап»
+    // остановилась или ушла за край — оставляем каплю-бусину и «кап»
     for (const h of this.heads) {
       if (h.dead) continue;
-      if (h.v <= 8 || h.y > this.stage.h + 20) {
+      if (h.v <= 0.5 || h.y > this.stage.h + 20) {
         if (h.y <= this.stage.h) {
-          const rb = this.width(Math.max(h.v, 8)) * 1.6 + 1.2;
-          this.stamp(h.x, h.y, rb, h.x, h.y + rb * 0.15, rb, h.ink, 1.05);
+          const rb = this.width(h) * 1.5;
+          this.stamp(h.x, h.y - rb * 0.3, this.width(h), h.x, h.y + rb * 0.25, rb, h.ink, 0.6);
           const f = rnd(800, 1400);
           tone({ freq: f, to: f * 1.6, dur: 0.06, type: 'sine', gain: 0.07, attack: 0.003, pan: panFor(h.x, this.stage.w), wet: 0.8 });
         }
@@ -345,8 +355,8 @@ export default class DripGame {
     const bead = new Float32Array(MAX_HEADS * 4), bink = new Float32Array(MAX_HEADS * 4);
     const k = this.k;
     this.heads.forEach((h, i) => {
-      const rb = this.width(h.v) * 1.6 + 1.2;
-      bead.set([h.x * k, height - (h.y + rb * 0.2) * k, rb * k, 0], i * 4);
+      const rb = this.width(h) * 1.4;
+      bead.set([h.x * k, height - (h.y + rb * 0.15) * k, rb * k, 0], i * 4);
       bink.set([h.ink[0], h.ink[1], h.ink[2], 0], i * 4);
     });
     this.g.run(this.P.display, {
