@@ -31,3 +31,9 @@ Animals (sounds/animals/) — BigSoundBank.com by Joseph Sardin, CC0 (public dom
 Freesound.org — downloaded with the CC0 license filter
   - "pig oink" by qubodup (sound 442906)        -> pig_1.ogg
   - "pig_oink" by calebmills99 (sound 867554)   -> pig_2.ogg
+
+Forest animals (sounds/animals/) — CC0 (public domain)
+  - "Bear growls" — U.S. Fish & Wildlife Service, via OpenGameArt.org (CC0)          -> bear_1.ogg
+  - "Grizzly Bear growl eating" by nivatius, Freesound sound 519599 (CC0, NPS recording) -> bear_2.ogg
+  - "foxBark2.wav" by Setzilla, Freesound sound 173208 (CC0)                           -> fox_*.ogg
+  - "Red_Squirrel_chatter.wav" by philberts, Freesound sound 111393 (CC0)              -> squirrel_*.ogg

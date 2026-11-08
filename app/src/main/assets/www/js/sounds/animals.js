@@ -9,8 +9,9 @@ export const ANIMAL_SAMPLES = {
   cow: ['cow_1', 'cow_2'], sheep: ['sheep_1', 'sheep_2'], goat: ['goat_1', 'goat_2'],
   horse: ['horse_1', 'horse_2'], dog: ['dog_1', 'dog_2'], cat: ['cat_1', 'cat_2'],
   frog: ['frog_1', 'frog_2'], owl: ['owl_1'], pig: ['pig_1', 'pig_2'],
+  bear: ['bear_1', 'bear_2'], fox: ['fox_1', 'fox_2'], squirrel: ['squirrel_1', 'squirrel_2'],
 };
-const GAIN = { cow: 0.55, sheep: 0.55, goat: 0.55, horse: 0.5, dog: 0.5, cat: 0.55, frog: 0.6, owl: 0.6, pig: 0.55 };
+const GAIN = { cow: 0.55, sheep: 0.55, goat: 0.55, horse: 0.5, dog: 0.5, cat: 0.55, frog: 0.6, owl: 0.6, pig: 0.55, bear: 0.6, fox: 0.6, squirrel: 0.6 };
 
 let manifest = null;
 export function preloadAnimals() {
@@ -44,7 +45,7 @@ const SYNTH = {
   // Эти звери в жизни почти не «говорят» — им мультяшные звуки.
   mouse: (p) => { for (let i = 0; i < 3; i++) tone({ freq: rnd(2600, 3200), to: rnd(3400, 4000), dur: 0.07, type: 'sine', gain: 0.12, attack: 0.004, at: i * 0.1, pan: p, wet: 0.4 }); },
   rabbit: (p) => tone({ freq: 240, to: 720, dur: 0.28, type: 'sine', gain: 0.2, attack: 0.005, pan: p, wet: 0.5, vibrato: 30, vibratoRate: 18, curve: 'lin' }),
-  // Пока нет записей — мультяшный синтез.
+  // Запасной синтез (если запись не загрузилась).
   bear: (p) => {
     tone({ freq: 120, to: 85, dur: 0.75, type: 'sawtooth', gain: 0.2, attack: 0.06, release: 0.35, pan: p, wet: 0.6, vibrato: 9, vibratoRate: 22, filter: { type: 'lowpass', freq: 520, q: 3 } });
     noise({ dur: 0.6, gain: 0.07, type: 'lowpass', freq: 400, attack: 0.06, pan: p, wet: 0.5 });

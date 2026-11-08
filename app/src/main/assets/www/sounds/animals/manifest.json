@@ -33,5 +33,17 @@
  "pig": [
   "pig_1",
   "pig_2"
+ ],
+ "bear": [
+  "bear_1",
+  "bear_2"
+ ],
+ "fox": [
+  "fox_1",
+  "fox_2"
+ ],
+ "squirrel": [
+  "squirrel_1",
+  "squirrel_2"
  ]
 }
