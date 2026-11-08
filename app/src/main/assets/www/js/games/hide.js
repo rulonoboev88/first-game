@@ -6,6 +6,7 @@ import { INK } from '../art/chick.js';
 import { panFor, noise } from '../core/audio.js';
 import { haptic } from '../core/haptics.js';
 import { animalVoice, preloadAnimals, cuckoo, whoosh } from '../sounds/animals.js';
+import { mouthFrom } from '../core/lipsync.js';
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const TYPES = ['bush', 'hay', 'house'];
@@ -75,8 +76,8 @@ export default class HideGame {
       // уже снаружи — ещё раз «ку-ку» и подпрыгнуть
       s.t = Math.min(s.t, 0.5);
       s.bump = 0;
-      animalVoice(s.kind, pan, { excited: true });
-      s.talk = 0.7;
+      s.voice = animalVoice(s.kind, pan, { excited: true });
+      s.vt = 0;
       haptic(1);
       return;
     }
@@ -84,7 +85,7 @@ export default class HideGame {
     s.t = 0;
     s.bump = null;
     cuckoo(pan);
-    setTimeout(() => { animalVoice(s.kind, pan); s.talk = 0.7; }, 420);
+    setTimeout(() => { s.voice = animalVoice(s.kind, pan); s.vt = 0; }, 420);
     haptic(1);
   }
 
@@ -102,7 +103,8 @@ export default class HideGame {
       s.blinkAt -= dt;
       if (s.blinkAt <= 0) { s.blink = 0.14; s.blinkAt = rnd(1.5, 3.5); }
       if (s.blink > 0) s.blink -= dt;
-      if (s.talk > 0) s.talk -= dt;
+      if (s.voice) { s.vt += dt; if (s.vt > s.voice.dur + 0.2) s.voice = null; }
+      s.open = mouthFrom(s.voice, s.open || 0, dt);
       if (s.state === 'out' && s.t > 2.6) {
         s.state = 'back'; s.t = 0;
         whoosh(panFor(s.x, this.stage.w));
@@ -157,7 +159,7 @@ export default class HideGame {
   }
 
   animalOpts(s) {
-    return { blink: s.blink > 0, open: s.talk > 0 ? Math.abs(Math.sin(s.talk * 14)) : 0, ear: Math.sin(this.time * 4 + s.x) * 0.5 };
+    return { blink: s.blink > 0, open: s.open || 0, ear: Math.sin(this.time * 4 + s.x) * 0.5 };
   }
 
   /** Куст / стог: зверь сидит позади и поднимается над верхом укрытия. */

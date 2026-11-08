@@ -5,12 +5,12 @@
 // по тучке — дождик. По дороге: смена пейзажей, туннель (темно, глаза светятся, потом зажигается свет), мост,
 // переезд со шлагбаумом, смена времени суток, иногда дождь или снег.
 import { drawAnimal, drawPaws } from '../art/animals.js';
-import { drawBird, BIRDS } from '../art/birds.js';
 import * as A from '../art/train.js';
 import { panFor } from '../core/audio.js';
 import { haptic } from '../core/haptics.js';
 import { animalVoice, preloadAnimals } from '../sounds/animals.js';
 import { preloadFarm, cluck, crow, quack, honk } from '../sounds/farm.js';
+import { mouthFrom } from '../core/lipsync.js';
 import * as S from '../sounds/train.js';
 
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -26,7 +26,6 @@ const STATION_ANIMALS = {
   village: ['dog', 'cat', 'hen', 'rooster', 'mouse'],
   lake: ['frog', 'owl', 'duck', 'goose', 'rabbit', 'hedgehog'],
 };
-const BIRD_ART = { hen: 'hen', rooster: 'rooster', duck: 'duckling', goose: 'gosling' };
 const STATION_ICON = { farm: 'cow', village: 'hen', lake: 'frog' };
 
 const LEG = 21;          // перегон между станциями, в вагонах
@@ -46,7 +45,8 @@ const HORIZON = -0.78;
 const EYES = {
   cow: [-15, -8, 15, -8], pig: [-15, -8, 15, -8], sheep: [-11, 2, 11, 2], goat: [-12, -10, 12, -10],
   horse: [-13, -8, 13, -8], dog: [-14, -8, 14, -8], cat: [-15, -4, 15, -4], frog: [-22, -26, 22, -26],
-  owl: [-17, -6, 17, -6], mouse: [-12, -2, 12, -2], rabbit: [-13, -2, 13, -2], hedgehog: [-12, 0, 12, 0],
+  owl: [-16, -6, 16, -6], mouse: [-11, -8, 11, -8], rabbit: [-13, -9, 13, -9], hedgehog: [-11, -8, 11, -8],
+  hen: [-14, -10, 14, -10], rooster: [-12, -10, 12, -10], duck: [-13, -10, 13, -10], goose: [-11, -20, 11, -21],
 };
 
 // Небо по времени суток: [момент круга, верх, низ, оттенок мира (r,g,b,a), ночь 0..1]
@@ -220,18 +220,18 @@ export default class TrainGame {
 
   makePassenger(kind) {
     return {
-      kind, bird: !!BIRD_ART[kind], blink: 0, blinkAt: rnd(0.8, 3), talk: 0, open: 0, trick: null, trickT: 0,
+      kind, blink: 0, blinkAt: rnd(0.8, 3), voice: null, vt: 0, open: 0, trick: null, trickT: 0,
       ear: 0, lean: 0, look: 0, tunT: 0, inT: false, lamp: 0, eyes: 0, pop: 0, ph: rnd(0, 6),
     };
   }
 
   voice(kind, x, excited = false) {
     const p = this.pan(x);
-    if (kind === 'hen') cluck(p);
-    else if (kind === 'rooster') crow(p);
-    else if (kind === 'duck') quack(p, false);
-    else if (kind === 'goose') honk(p);
-    else animalVoice(kind, p, { excited });
+    if (kind === 'hen') return cluck(p);
+    if (kind === 'rooster') return crow(p);
+    if (kind === 'duck') return quack(p, false);
+    if (kind === 'goose') return honk(p, false);
+    return animalVoice(kind, p, { excited });
   }
 
   winX(i) { return WAGON_X[i] + 0.5; }
@@ -249,10 +249,9 @@ export default class TrainGame {
   tapPassenger(i) {
     const a = this.passengers[i];
     a.trick = pick(['hop', 'wiggle', 'wave']);
-    if (a.bird) a.trick = pick(['hop', 'flap']);
     a.trickT = 0;
-    a.talk = 0.75;
-    this.voice(a.kind, this.winX(i), true);
+    a.voice = this.voice(a.kind, this.winX(i), true);
+    a.vt = 0;
     haptic(1);
   }
 
@@ -271,7 +270,7 @@ export default class TrainGame {
     for (const w of this.walkers) {
       const hp = this.walkerHead(w);
       if (Math.hypot(q.x - hp.x, q.y - hp.y) < 0.3) {
-        w.talk = 0.75; w.jump = 0; this.voice(w.kind, hp.x, true); haptic(1); return;
+        w.voice = this.voice(w.kind, hp.x, true); w.vt = 0; w.jump = 0; haptic(1); return;
       }
     }
     // колокол на станции
@@ -390,24 +389,23 @@ export default class TrainGame {
     const hp = this.headPos(i);
     this.passengers[i] = null;
     this.walkers.push({
-      kind: a.kind, bird: a.bird, mode: 'out', t: 0, X: this.D + hp.x, y: hp.y,
-      fromX: this.D + hp.x, fromY: hp.y, toX: this.D + hp.x - rnd(0.2, 0.4), talk: 0, jump: 1, ph: rnd(0, 6), wave: 0,
+      kind: a.kind, mode: 'out', t: 0, X: this.D + hp.x, y: hp.y,
+      fromX: this.D + hp.x, fromY: hp.y, toX: this.D + hp.x - rnd(0.2, 0.4), voice: null, vt: 0, open: 0, jump: 1, ph: rnd(0, 6), wave: 0,
     });
     S.hop(this.pan(hp.x));
   }
 
   spawnBoarder(kind, wagon) {
     this.walkers.push({
-      kind, bird: !!BIRD_ART[kind], mode: 'board', t: 0, X: this.D + this.xr + 0.5 + rnd(0, 0.3), y: this.groundY(kind),
-      wagon, talk: 0, jump: 1, ph: rnd(0, 6), wave: 0,
+      kind, mode: 'board', t: 0, X: this.D + this.xr + 0.5 + rnd(0, 0.3), y: this.groundY(kind),
+      wagon, voice: null, vt: 0, open: 0, jump: 1, ph: rnd(0, 6), wave: 0,
     });
   }
 
-  groundY(kind) { return BIRD_ART[kind] ? 0.04 : 0.04 - 0.57 * HEAD; }
+  groundY() { return 0.04 - 0.57 * HEAD; }
 
   walkerHead(w) {
     const x = w.X - this.D;
-    if (w.bird) return { x, y: w.y - 0.25 };
     return { x, y: w.y };
   }
 
@@ -497,7 +495,8 @@ export default class TrainGame {
       a.blinkAt -= dt;
       if (a.blinkAt <= 0) { a.blink = 0.13; a.blinkAt = rnd(1.5, 3.5); }
       if (a.blink > 0) a.blink -= dt;
-      if (a.talk > 0) { a.talk -= dt; a.open = Math.abs(Math.sin(a.talk * 14)) * Math.min(1, a.talk * 3); } else a.open = 0;
+      if (a.voice) { a.vt += dt; if (a.vt > a.voice.dur + 0.2) a.voice = null; }
+      a.open = mouthFrom(a.voice, a.open, dt);
       if (a.trick) { a.trickT += dt; if (a.trickT > 0.9) a.trick = null; }
       if (a.pop > 0) a.pop = Math.max(0, a.pop - dt * 2.5);
       a.ear = Math.sin(this.time * 2.5 + a.ph) * 0.4;
@@ -529,7 +528,8 @@ export default class TrainGame {
     for (const w of this.walkers) {
       w.t += dt;
       w.ph += dt;
-      if (w.talk > 0) w.talk -= dt;
+      if (w.voice) { w.vt += dt; if (w.vt > w.voice.dur + 0.2) w.voice = null; }
+      w.open = mouthFrom(w.voice, w.open, dt);
       if (w.jump < 1) w.jump = Math.min(1, w.jump + dt * 2.2);
       if (w.mode === 'out') {
         // прыжок из окна на перрон
@@ -537,7 +537,7 @@ export default class TrainGame {
         const gy = this.groundY(w.kind);
         w.X = lerp(w.fromX, w.toX, k);
         w.y = lerp(w.fromY, gy, k) - Math.sin(k * Math.PI) * 0.35;
-        if (k >= 1) { w.mode = 'wave'; w.t = 0; w.talk = 0.75; this.voice(w.kind, w.X - this.D); }
+        if (k >= 1) { w.mode = 'wave'; w.t = 0; w.voice = this.voice(w.kind, w.X - this.D); w.vt = 0; }
       } else if (w.mode === 'wave') {
         w.wave = Math.abs(Math.sin(w.t * 9));
         if (w.t > 0.9) { w.mode = 'leave'; w.t = 0; w.wave = 0; }
@@ -555,14 +555,14 @@ export default class TrainGame {
         const k = clamp(w.t / 0.5, 0, 1);
         const tx = this.D + this.winX(w.wagon);
         w.X = lerp(w.fromX, tx, k);
-        const ty = w.bird ? A.WAGON.sill + 0.12 : HEAD_Y;
+        const ty = HEAD_Y;
         w.y = lerp(w.fromY, ty, k) - Math.sin(k * Math.PI) * 0.4;
         if (k >= 1) {
           w.dead = true;
           const a = this.makePassenger(w.kind);
-          a.talk = 0.75; a.pop = 1;
+          a.pop = 1;
           this.passengers[w.wagon] = a;
-          this.voice(w.kind, this.winX(w.wagon), true);
+          a.voice = this.voice(w.kind, this.winX(w.wagon), true);
         }
       }
     }
@@ -923,8 +923,7 @@ export default class TrainGame {
 
   drawIcon(ctx, theme, x, y, s) {
     const kind = STATION_ICON[theme];
-    if (BIRD_ART[kind]) drawBird(ctx, BIRD_ART[kind], x - s * 0.05, y + s * 0.42, s * 0.62);
-    else drawAnimal(ctx, kind, x, y + s * 0.05, s * 0.85, { paws: false });
+    drawAnimal(ctx, kind, x, y + s * 0.08, s * 0.82, { paws: false, body: false });
   }
 
   drawMountain(ctx, a, b) {
@@ -1064,15 +1063,7 @@ export default class TrainGame {
     ctx.clip();
     if (a) {
       const hp = this.headPos(i);
-      if (a.bird) {
-        const art = BIRD_ART[a.kind];
-        const def = BIRDS[art];
-        let gy = A.WAGON.sill + 0.12 + bob + a.lean * 0.05;
-        if (a.trick === 'hop') gy -= Math.sin(clamp(a.trickT / 0.55, 0, 1) * Math.PI) * 0.09;
-        if (a.pop > 0) gy -= Math.sin(a.pop * Math.PI) * 0.04;
-        const wing = a.trick === 'flap' ? Math.abs(Math.sin(a.trickT * 16)) : a.talk > 0 ? Math.abs(Math.sin(a.talk * 10)) * 0.6 : 0;
-        drawBird(ctx, art, hp.x, gy, 0.6 / def.height, { wing, blink: a.blink > 0, tilt: a.lean * 0.2 });
-      } else {
+      {
         let rot = a.lean * 0.12;
         if (a.trick === 'wiggle') rot += Math.sin(a.trickT * 22) * 0.2 * (1 - a.trickT / 0.9);
         ctx.save();
@@ -1091,7 +1082,7 @@ export default class TrainGame {
     ctx.translate(x0, 0);
     A.drawSill(ctx, bob);
     ctx.restore();
-    if (a && !a.bird) {
+    if (a) {
       // лапки держатся за подоконник (не подпрыгивают вместе с головой)
       ctx.save();
       ctx.translate(this.winX(i), HEAD_Y + bob + a.lean * 0.05);
@@ -1106,15 +1097,8 @@ export default class TrainGame {
     const x = w.X - this.D;
     if (x < this.xl - 0.6 || x > this.xr + 0.6) return;
     const extra = w.jump < 1 ? Math.sin(w.jump * Math.PI) * 0.18 : 0;
-    const talking = w.talk > 0;
-    const open = talking ? Math.abs(Math.sin(w.talk * 14)) * Math.min(1, w.talk * 3) : 0;
-    if (w.bird) {
-      const art = BIRD_ART[w.kind];
-      const step = w.mode === 'leave' || w.mode === 'board' ? (w.ph * 3) % 1 : 0;
-      const wing = w.mode === 'wave' ? w.wave : talking ? 0.5 : 0;
-      drawBird(ctx, art, x, w.y - extra, 0.5 / BIRDS[art].height, { flip: true, step, wing });
-    } else {
-      drawAnimal(ctx, w.kind, x, w.y - extra, HEAD, { open, ear: Math.sin(w.ph * 6) * 0.5, wave: w.wave, blink: false });
+    {
+      drawAnimal(ctx, w.kind, x, w.y - extra, HEAD, { body: false, open: w.open, ear: Math.sin(w.ph * 6) * 0.5, wave: w.wave, blink: false });
     }
   }
 
@@ -1190,12 +1174,7 @@ export default class TrainGame {
 
   drawEyes(ctx, i, a) {
     const pts = [];
-    if (a.bird) {
-      const def = BIRDS[BIRD_ART[a.kind]];
-      const s = (0.6 / def.height) * def.height / 100;
-      const gy = A.WAGON.sill + 0.12 + this.bob(i);
-      pts.push([this.winX(i) + (def.eye[0] - 50) * s, gy + (def.eye[1] - 91) * s]);
-    } else {
+    {
       const e = EYES[a.kind], hp = this.headPos(i), k = HEAD / 100;
       pts.push([hp.x + e[0] * k, hp.y + e[1] * k], [hp.x + e[2] * k, hp.y + e[3] * k]);
     }

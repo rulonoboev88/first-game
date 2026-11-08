@@ -227,7 +227,7 @@ export function hasSample(key) {
 }
 
 /** Проигрывает сэмпл. rate — скорость (выше = тоньше голос). Возвращает false, если не загружен. */
-export function playSample(key, { rate = 1, gain = 0.6, pan = 0, at = 0, wet = 0.4 } = {}) {
+export function playSample(key, { rate = 1, gain = 0.6, pan = 0, at = 0, wet = 0.4, meter = false } = {}) {
   const buf = samples.get(key);
   if (!buf || !canPlay()) return false;
   const src = ctx.createBufferSource();
@@ -240,7 +240,36 @@ export function playSample(key, { rate = 1, gain = 0.6, pan = 0, at = 0, wet = 0
   const t0 = ctx.currentTime + at;
   src.start(t0);
   track(src, t0 + buf.duration / rate);
-  return true;
+  if (!meter) return true;
+  // «Ухо» на голос: по нему зверь шевелит ртом в такт звуку
+  const an = ctx.createAnalyser();
+  an.fftSize = 512;
+  g.connect(an);
+  const data = new Float32Array(an.fftSize);
+  const end = t0 + buf.duration / rate;
+  return {
+    dur: buf.duration / rate,
+    level() {
+      if (ctx.currentTime > end + 0.05) return 0;
+      an.getFloatTimeDomainData(data);
+      let s = 0;
+      for (let i = 0; i < data.length; i++) s += data[i] * data[i];
+      return Math.sqrt(s / data.length);
+    },
+  };
+}
+
+/** Голос без записи (синтез): рот шевелится по простой огибающей. */
+export function fakeVoice(dur = 0.6) {
+  const t0 = ctx ? ctx.currentTime : 0;
+  return {
+    dur,
+    level() {
+      const t = (ctx ? ctx.currentTime : 0) - t0;
+      if (t < 0 || t > dur) return 0;
+      return 0.4 + 0.6 * Math.abs(Math.sin(t * 13));
+    },
+  };
 }
 
 // ---------- Длящийся голос (для звучащей линии в рисовалке) ----------

@@ -5,6 +5,7 @@ import { drawAnimal, ANIMALS } from '../art/animals.js';
 import { panFor } from '../core/audio.js';
 import { haptic } from '../core/haptics.js';
 import { animalVoice, preloadAnimals, sneeze, whoosh, boing, swirl } from '../sounds/animals.js';
+import { mouthFrom } from '../core/lipsync.js';
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -84,8 +85,8 @@ export default class AnimalsGame {
   }
 
   speak(a, excited = false) {
-    animalVoice(a.kind, this.pan(a), { excited });
-    a.talk = 0.7;
+    a.voice = animalVoice(a.kind, this.pan(a), { excited });
+    a.vt = 0;
   }
 
   trick(a) {
@@ -146,7 +147,8 @@ export default class AnimalsGame {
       a.blinkAt -= dt;
       if (a.blinkAt <= 0) { a.blink = 0.13; a.blinkAt = rnd(1.4, 3.2); }
       if (a.blink > 0) a.blink -= dt;
-      if (a.talk > 0) { a.talk -= dt; a.open = Math.abs(Math.sin(a.talk * 14)) * Math.min(1, a.talk * 3); } else a.open = 0;
+      if (a.voice) { a.vt += dt; if (a.vt > a.voice.dur + 0.2) a.voice = null; }
+      a.open = mouthFrom(a.voice, a.open || 0, dt);
       a.ear = Math.sin(this.time * 3 + a.along) * 0.4;
     }
     this.peeks = this.peeks.filter((a) => !(a.state === 'out' && a.t > 0.35));

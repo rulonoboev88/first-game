@@ -1,5 +1,5 @@
 // Синтезированные голоса птичьего двора. Мультяшные, но узнаваемые по ритму и интонации.
-import { tone, noise, chime, loadSamples, playSample } from '../core/audio.js';
+import { tone, noise, chime, loadSamples, playSample, fakeVoice } from '../core/audio.js';
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 
@@ -150,13 +150,13 @@ export function preloadFarm() {
 }
 
 const lastPick = {};
-function sample(group, { rate = 1, gain = 1, pan = 0, at = 0 } = {}) {
+function sample(group, { rate = 1, gain = 1, pan = 0, at = 0, meter = false } = {}) {
   const list = SETS[group];
   // не повторяем один и тот же фрагмент два раза подряд
   let i = Math.floor(Math.random() * list.length);
   if (list.length > 1 && i === lastPick[group]) i = (i + 1) % list.length;
   lastPick[group] = i;
-  return playSample(`${DIR}/${list[i]}`, { rate, gain: GAIN[group] * gain, pan, at, wet: 0.35 });
+  return playSample(`${DIR}/${list[i]}`, { rate, gain: GAIN[group] * gain, pan, at, wet: 0.35, meter });
 }
 
 export function chirp({ pan = 0, loud = false } = {}) {
@@ -174,20 +174,28 @@ export function goldChirp(pan = 0) {
 
 /** Утёнок — запись утки, поднятая выше (детёныш); взрослая — как есть. */
 export function quack(pan = 0, baby = true) {
-  if (!sample('duck', { rate: baby ? rnd(1.35, 1.55) : rnd(0.95, 1.05), pan })) quackSynth(pan, baby);
+  const v = sample('duck', { rate: baby ? rnd(1.35, 1.55) : rnd(0.95, 1.05), pan, meter: true });
+  if (v) return v;
+  quackSynth(pan, baby); return fakeVoice(0.4);
 }
 
 /** Гусёнок — запись гуся, поднятая выше. */
-export function honk(pan = 0) {
-  if (!sample('goose', { rate: rnd(1.3, 1.5), pan })) honkSynth(pan);
+export function honk(pan = 0, baby = true) {
+  const v = sample('goose', { rate: baby ? rnd(1.3, 1.5) : rnd(0.95, 1.05), pan, meter: true });
+  if (v) return v;
+  honkSynth(pan); return fakeVoice(0.5);
 }
 
 export function cluck(pan = 0, long = false) {
-  if (!sample(long ? 'henlay' : 'hen', { rate: rnd(0.96, 1.06), pan })) cluckSynth(pan, long);
+  const v = sample(long ? 'henlay' : 'hen', { rate: rnd(0.96, 1.06), pan, meter: true });
+  if (v) return v;
+  cluckSynth(pan, long); return fakeVoice(0.5);
 }
 
 export function crow(pan = 0) {
-  if (!sample('rooster', { rate: rnd(0.97, 1.04), pan })) crowSynth(pan);
+  const v = sample('rooster', { rate: rnd(0.97, 1.04), pan, meter: true });
+  if (v) return v;
+  crowSynth(pan); return fakeVoice(1.2);
 }
 
 export function gobble(pan = 0) {

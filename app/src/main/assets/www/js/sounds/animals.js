@@ -1,5 +1,5 @@
 // Голоса зверей: натуральные записи CC0 (если загружены), иначе мультяшный синтез.
-import { tone, noise, loadSamples, playSample } from '../core/audio.js';
+import { tone, noise, loadSamples, playSample, fakeVoice } from '../core/audio.js';
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const DIR = 'sounds/animals';
@@ -26,7 +26,7 @@ function sample(kind, opts) {
   let i = Math.floor(Math.random() * list.length);
   if (list.length > 1 && i === last[kind]) i = (i + 1) % list.length;
   last[kind] = i;
-  return playSample(`${DIR}/${list[i]}`, { gain: GAIN[kind] || 0.55, wet: 0.35, ...opts });
+  return playSample(`${DIR}/${list[i]}`, { gain: GAIN[kind] || 0.55, wet: 0.35, meter: true, ...opts });
 }
 
 // ---------- Синтез (запасной вариант и звери без записей) ----------
@@ -47,11 +47,13 @@ const SYNTH = {
   hedgehog: (p) => { for (let i = 0; i < 3; i++) noise({ dur: 0.07, gain: 0.18, type: 'bandpass', freq: 1800, q: 1.2, at: i * 0.11, pan: p, wet: 0.3 }); },
 };
 
-/** Голос зверя. Возвращает примерную длительность (для анимации рта). */
+/** Голос зверя. Возвращает «голос» { dur, level() } — по нему рот двигается в такт звуку. */
 export function animalVoice(kind, pan = 0, { excited = false } = {}) {
   const rate = excited ? rnd(1.05, 1.15) : rnd(0.95, 1.05);
-  if (!sample(kind, { rate, pan })) SYNTH[kind] && SYNTH[kind](pan);
-  return 0.8;
+  const v = sample(kind, { rate, pan });
+  if (v) return v;
+  if (SYNTH[kind]) SYNTH[kind](pan);
+  return fakeVoice(0.6);
 }
 
 /** «Апчхи!» — один из трюков. */
