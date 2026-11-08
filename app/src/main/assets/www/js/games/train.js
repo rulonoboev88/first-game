@@ -287,26 +287,21 @@ export default class TrainGame {
         cr.squash = 1; cr.beep = 0.5; S.carBeep(this.pan(cx)); haptic(1); return;
       }
     }
+    // паровоз — всегда гудок «ту-тууу», второе «тууу» звучит, пока палец на месте (по трубе — ещё и большой клуб дыма)
+    if (q.x > LOCO_X - 0.08 && q.x < TRAIN_LEN + 0.06 && q.y > -1.25 && q.y < 0.05) {
+      const ch = A.LOCO.chimney;
+      const chimney = Math.hypot(q.x - (LOCO_X + ch.x), q.y - (ch.y + 0.1)) < 0.2;
+      this.startWhistle(p, chimney);
+      return;
+    }
     // клубы дыма
     for (let i = this.puffs.length - 1; i >= 0; i--) {
       const f = this.puffs[i];
-      if (f.a > 0.25 && Math.hypot(q.x - f.x, q.y - f.y) < f.r * 1.2 + 0.05) { this.popPuff(f); return; }
+      if (!f.steam && f.a > 0.25 && Math.hypot(q.x - f.x, q.y - f.y) < f.r * 1.2 + 0.05) { this.popPuff(f); return; }
     }
-    // труба
-    const ch = A.LOCO.chimney;
-    if (Math.hypot(q.x - (LOCO_X + ch.x), q.y - (ch.y + 0.1)) < 0.2) {
-      this.emitPuff(1.9, true);
-      S.bigPuff(this.pan(LOCO_X + 1), this.locoInTunnel());
-      haptic(1);
-      return;
-    }
-    // сам поезд — гудок, пока держишь
+    // вагоны — тоже гудок
     if (q.x > -0.05 && q.x < TRAIN_LEN + 0.05 && q.y > -1.15 && q.y < 0.05) {
-      const old = this.whistles.get(p.id);
-      if (old) old.release();
-      this.whistles.set(p.id, S.whistle({ pan: this.pan(LOCO_X + 1), echo: this.locoInTunnel() }));
-      this.emitPuff(1.3, true);
-      haptic(1);
+      this.startWhistle(p, false);
       return;
     }
     // тучка — дождик
@@ -317,6 +312,16 @@ export default class TrainGame {
       }
     }
   }
+  startWhistle(p, big) {
+    const old = this.whistles.get(p.id);
+    if (old) old.release();
+    this.whistles.set(p.id, S.whistle({ pan: this.pan(LOCO_X + 1), echo: this.locoInTunnel() }));
+    this.emitPuff(big ? 1.9 : 1.3, true);
+    if (big) S.chuff(this.pan(LOCO_X + 1), 1.8, this.locoInTunnel());
+    this.steamT = 0;
+    haptic(1);
+  }
+
   onMove() {}
   onUp(p) {
     const wh = this.whistles.get(p.id);
@@ -339,7 +344,7 @@ export default class TrainGame {
       x: LOCO_X + ch.x + rnd(-0.02, 0.02), y: ch.y - 0.04, r: 0.06 * size, r1: (big ? 0.34 : 0.22) * size,
       vx: -this.v * 0.7 - rnd(0.03, 0.1), vy: -rnd(0.35, 0.5) * (big ? 1.2 : 1), a: 0.9, t: 0, life: rnd(2.2, 3) * (big ? 1.3 : 1),
     });
-    if (this.puffs.length > 40) this.puffs.shift();
+    if (this.puffs.length > 70) this.puffs.shift();
   }
 
   popPuff(f) {
@@ -468,6 +473,17 @@ export default class TrainGame {
       if (this.idlePuff <= 0) { this.idlePuff = rnd(0.9, 1.4); this.emitPuff(0.8); }
     }
 
+    // пар из свистка, пока гудим
+    if (this.whistles.size) {
+      this.steamT -= dt;
+      if (this.steamT <= 0) {
+        this.steamT = 0.05;
+        this.puffs.push({
+          x: LOCO_X + 0.55 + rnd(-0.01, 0.01), y: -0.94, r: 0.035, r1: rnd(0.14, 0.2), steam: true,
+          vx: -this.v * 0.6 + rnd(-0.08, 0.08), vy: -rnd(0.9, 1.2), a: 0.85, t: 0, life: rnd(0.5, 0.7),
+        });
+      }
+    }
     // дым
     for (const f of this.puffs) {
       f.t += dt;

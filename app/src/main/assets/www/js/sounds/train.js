@@ -76,7 +76,7 @@ export function whistle({ pan = 0, echo = false, gain = 1 } = {}) {
     g.gain.setTargetAtTime(0.0001, t, 0.09);
     for (const s of srcs) s.stop(t + 0.8);
   };
-  setTimeout(release, 7000); // страховка: гудок не бесконечный
+  setTimeout(release, 60000); // страховка на случай потерянного касания; пока палец держат — гудит
   return { release };
 }
 
