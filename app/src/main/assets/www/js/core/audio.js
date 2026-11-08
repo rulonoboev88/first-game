@@ -85,6 +85,17 @@ function outNode(pan = 0, wet = 1) {
   return p;
 }
 
+/** Для собственных длящихся звуков (гудок, дождь): выход с панорамой и общий шум. */
+export function voiceOut(pan = 0, wet = 1) {
+  return ctx ? outNode(pan, wet) : null;
+}
+export function noiseBuffer() {
+  return noiseBuf;
+}
+export function audioReady() {
+  return !!(ctx && ctx.state === 'running');
+}
+
 function track(node, endTime) {
   active++;
   node.onended = () => { active--; };

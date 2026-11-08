@@ -32,7 +32,8 @@ export const GAMES = [
     load: () => import('./fireworks.js') },
   { id: 'ducks', ready: true, bg: '#E0F6FF', label: { uk: 'Качечки', ru: 'Уточки', en: 'Duckies' },
     load: () => import('./ducks.js') },
-  { id: 'train',     ready: false, bg: '#FFE8E3', label: { uk: 'Потяг', ru: 'Паровозик', en: 'Train' } },
+  { id: 'train',     ready: true,  bg: '#FFE8E3', label: { uk: 'Потяг', ru: 'Паровозик', en: 'Train' },
+    load: () => import('./train.js') },
 ];
 
 export const SURPRISE_LABEL = { uk: 'Сюрприз', ru: 'Сюрприз', en: 'Surprise' };
