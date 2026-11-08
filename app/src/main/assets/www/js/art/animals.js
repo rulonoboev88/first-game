@@ -5,7 +5,7 @@
 //
 // Анимация голоса: o.open (0..1) — рот/клюв открыт; голова вытягивается вверх, уши приподнимаются, брови взлетают.
 
-export const ANIMALS = ['cow', 'pig', 'sheep', 'goat', 'horse', 'dog', 'cat', 'frog', 'owl', 'mouse', 'rabbit', 'hedgehog'];
+export const ANIMALS = ['cow', 'pig', 'sheep', 'goat', 'horse', 'dog', 'cat', 'frog', 'owl', 'mouse', 'rabbit', 'hedgehog', 'bear', 'fox', 'squirrel'];
 export const BIRD_HEADS = ['hen', 'rooster', 'duck', 'goose'];
 
 export const INK = '#3D2614';
@@ -810,6 +810,132 @@ const CHARS = {
       ctx.restore();
     },
     paws(K, o) { wings(K, '#EDEDED', o.wave); },
+  },
+
+  // Медвежонок-сладкоежка: круглые уши, светлая мордочка, бочонок мёда в лапах.
+  bear: {
+    body(K) { shoulders(K, '#9C6B45', () => K.mark(E(0, 66, 20, 24), '#C9A27A')); },
+    back(K, o) {
+      both((s) => {
+        const ctx = K.ctx;
+        ctx.save(); ctx.translate(s * 28, -28); ctx.rotate(s * (o.ear * 0.15 - o.open * 0.15));
+        K.part(C(0, 0, 13), '#9C6B45', { box: [-13, -13, 13, 13] });
+        K.mark(C(s * 1, 1, 7.5), '#E3B88A');
+        ctx.restore();
+      });
+    },
+    head(K, o) {
+      const head = P('M-36 -8 C-36 -36 36 -36 36 -8 C38 14 24 32 0 33 C-24 32 -38 14 -36 -8 Z');
+      K.part(head, '#9C6B45', { box: [-38, -36, 38, 33] });
+      K.line(P('M-4 -32 C-6 -40 2 -42 3 -36'), 2.6);
+      K.eye(-14, -9, 8.5, { look: o.look * 0.6, blink: o.blink, wide: o.open, skin: '#9C6B45', brow: 1.5 });
+      K.eye(14, -9, 8.5, { look: o.look * 0.6, blink: o.blink, wide: o.open, skin: '#9C6B45', brow: 1.5 });
+      K.part(E(0, 15, 18, 13), '#E3B88A', { box: [-18, 2, 18, 28] });
+      K.part(P('M-7 7 C-7 3 7 3 7 7 C7 11 3 13 0 13 C-3 13 -7 11 -7 7 Z'), '#2B1D17', { flat: true, lw: 2 });
+      K.ctx.fillStyle = 'rgba(255,255,255,0.6)'; K.ctx.beginPath(); K.ctx.ellipse(-2.5, 5.5, 2.4, 1.3, -0.3, 0, Math.PI * 2); K.ctx.fill();
+      K.mouth(0, 20, 14, o.open, { closed: P('M0 13 L0 17 M-7 18 Q-3.5 22 0 18 Q3.5 22 7 18'), h: 11 });
+      K.blush(-25, 8, 6); K.blush(25, 10, 5);
+    },
+    paws(K, o) {
+      const ctx = K.ctx;
+      ctx.save(); ctx.translate(0, 38 - (o.wave || 0) * 4);
+      const pot = P('M-13 -6 C-15 4 -13 12 -8 14 L8 14 C13 12 15 4 13 -6 Z');
+      K.part(pot, '#E9A23B', { box: [-15, -6, 15, 14] });
+      K.part(P('M-15 -10 L15 -10 L15 -4 L-15 -4 Z'), '#B7791F', { flat: true, lw: 2.4 });
+      K.part(P('M-13 -10 C-13 -16 -6 -18 -2 -14 C2 -18 10 -16 12 -10 Z'), '#FFC93C', { flat: true, lw: 2.2 });
+      K.line(P('M-6 2 L6 2'), 2.2, 'rgba(90,50,10,0.5)');
+      ctx.restore();
+      pawsRound(K, '#9C6B45', o.wave, true);
+    },
+  },
+
+  // Лиса-хитрюля: хитрый прищур, белые пушистые щёки, чёрные кончики ушей, хвост выглядывает сбоку.
+  fox: {
+    body(K) {
+      shoulders(K, '#F07C2E', () => K.mark(P('M-14 36 C-12 52 -6 62 0 66 C6 62 12 52 14 36 Z'), '#FFF4E6'));
+    },
+    back(K, o) {
+      const ctx = K.ctx;
+      // хвост с белым кончиком
+      ctx.save(); ctx.translate(30, 40); ctx.rotate(-0.2 + Math.sin(o.ear * 2) * 0.08);
+      const tail = P('M0 0 C14 -10 24 -34 18 -54 C14 -64 4 -62 6 -50 C8 -34 -4 -18 -12 -6 Z');
+      K.part(tail, '#F07C2E', { box: [-12, -64, 24, 0] });
+      K.clip(tail, () => K.mark(E(12, -56, 10, 9), '#FFFFFF'));
+      ctx.lineWidth = 3.2; ctx.strokeStyle = INK; ctx.stroke(tail);
+      ctx.restore();
+      both((s) => {
+        ctx.save(); ctx.translate(s * 22, -30); ctx.rotate(s * (0.22 + o.ear * 0.2 - o.open * 0.15));
+        const ear = P('M-11 6 L0 -26 L11 6 Z');
+        K.part(ear, '#F07C2E', { box: [-11, -26, 11, 6] });
+        K.clip(ear, () => K.mark(P('M-6 -12 L0 -27 L6 -12 Z'), '#2B1D17'));
+        K.mark(P('M-5 3 L0 -12 L5 3 Z'), '#FFD8C2');
+        ctx.lineWidth = 3.2; ctx.strokeStyle = INK; ctx.stroke(ear);
+        ctx.restore();
+      });
+    },
+    head(K, o) {
+      // узкая острая мордочка: широкий лоб, к носику сужается
+      const head = P('M-30 -20 C-24 -36 24 -36 30 -20 C34 -10 26 2 17 10 C10 17 5 26 0 29 C-5 26 -10 17 -17 10 C-26 2 -34 -10 -30 -20 Z');
+      K.part(head, '#F07C2E', { box: [-34, -36, 34, 29] });
+      K.clip(head, () => {
+        // белая «маска» снизу и щёчки
+        K.mark(P('M-34 -4 C-22 0 -10 6 0 8 C10 6 22 0 34 -4 L34 40 L-34 40 Z'), '#FFF4E6');
+      });
+      K.ctx.lineWidth = 3.2; K.ctx.strokeStyle = INK; K.ctx.stroke(head);
+      K.eye(-12, -11, 8, { lid: 0.24, look: 0.4 + o.look * 0.4, blink: o.blink, wide: o.open, skin: '#F07C2E', iris: '#C77D18', brow: 1, browTilt: 1 });
+      K.eye(12, -11, 8, { lid: 0.24, look: 0.4 + o.look * 0.4, blink: o.blink, wide: o.open, skin: '#F07C2E', iris: '#C77D18', brow: 3, browTilt: 1.5 });
+      K.part(P('M-5 19 C-5 15 5 15 5 19 C5 22 2 24 0 24 C-2 24 -5 22 -5 19 Z'), '#2B1D17', { flat: true, lw: 2 });
+      K.ctx.fillStyle = 'rgba(255,255,255,0.6)'; K.ctx.beginPath(); K.ctx.ellipse(-1.8, 17.5, 1.8, 1, -0.3, 0, Math.PI * 2); K.ctx.fill();
+      K.mouth(1, 27, 10, o.open, { closed: P('M0 24 L0 26 M-4 27 Q0 30 5 26'), h: 8, smile: 3 });
+      K.blush(-17, 2, 4.5); K.blush(17, 2, 4.5);
+    },
+    paws(K, o) { pawsRound(K, '#F07C2E', o.wave, true, '#2B1D17'); },
+  },
+
+  // Белочка с орешком: кисточки на ушах, пушистый хвост за спиной, щёчки, зубки.
+  squirrel: {
+    body(K) { shoulders(K, '#D9813B', () => K.mark(E(0, 66, 18, 24), '#FFE8CC')); },
+    back(K, o) {
+      const ctx = K.ctx;
+      // пушистый хвост-завиток за головой
+      ctx.save(); ctx.translate(-22, 40); ctx.rotate(Math.sin(o.ear * 2) * 0.06);
+      const tail = P('M0 0 C-26 -10 -34 -46 -18 -70 C-6 -86 20 -84 26 -66 C30 -54 20 -46 12 -52 C6 -58 -8 -50 -6 -36 C-4 -20 4 -8 8 0 Z');
+      K.part(tail, '#E08E45', { box: [-34, -86, 30, 0] });
+      K.ctx.strokeStyle = 'rgba(140,70,20,0.35)'; K.ctx.lineWidth = 2;
+      for (const [x, y] of [[-20, -40], [-16, -60], [4, -74]]) { K.ctx.beginPath(); K.ctx.arc(x, y, 7, 0.4, 2.4); K.ctx.stroke(); }
+      ctx.restore();
+      both((s) => {
+        ctx.save(); ctx.translate(s * 20, -30); ctx.rotate(s * (0.15 + o.ear * 0.2 - o.open * 0.15));
+        K.part(P('M-8 6 C-10 -8 -4 -18 0 -20 C4 -18 10 -8 8 6 Z'), '#D9813B', { box: [-10, -20, 10, 6] });
+        K.mark(P('M-4 3 C-5 -5 -2 -11 0 -12 C2 -11 5 -5 4 3 Z'), '#FFC9A8');
+        K.part(P('M-2 -18 C-6 -28 0 -32 2 -26 C4 -32 10 -28 4 -18 Z'), '#8B4A1C', { flat: true, lw: 2.2 });
+        ctx.restore();
+      });
+    },
+    head(K, o) {
+      const head = P('M-28 -12 C-28 -34 28 -34 28 -12 C30 8 18 28 0 29 C-18 28 -30 8 -28 -12 Z');
+      K.part(head, '#D9813B', { box: [-30, -34, 30, 29] });
+      K.part(E(-11, 13, 10, 8.5), '#FFE8CC', { box: [-21, 4, -1, 22], lw: 2.4 });
+      K.part(E(11, 13, 10, 8.5), '#FFE8CC', { box: [1, 4, 21, 22], lw: 2.4 });
+      K.eye(-11, -9, 9, { look: o.look * 0.6, blink: o.blink, wide: o.open, skin: '#D9813B', lash: -1 });
+      K.eye(11, -9, 9, { look: o.look * 0.6, blink: o.blink, wide: o.open, skin: '#D9813B', lash: 1 });
+      K.part(P('M-4 6 L4 6 C4 9 2 10 0 10 C-2 10 -4 9 -4 6 Z'), '#5C2E14', { flat: true, lw: 2 });
+      if (o.open < 0.08) {
+        K.part(P('M-4 16 L4 16 L4 23 Q0 25 -4 23 Z'), '#FFFFFF', { flat: true, lw: 2 });
+        K.line(P('M0 16 L0 23'), 1.4);
+        K.line(P('M0 10 L0 14 M-6 14 Q-3 17 0 14 Q3 17 6 14'), 2.4);
+      } else K.mouth(0, 14, 13, o.open, { teeth: 8, h: 10 });
+      K.blush(-20, 4, 5); K.blush(20, 4, 5);
+    },
+    paws(K, o) {
+      const ctx = K.ctx;
+      ctx.save(); ctx.translate(0, 40 - (o.wave || 0) * 4);
+      K.part(P('M-9 -2 C-9 8 -4 13 0 13 C4 13 9 8 9 -2 Z'), '#C08040', { box: [-9, -2, 9, 13] });
+      K.part(P('M-11 -2 C-11 -10 11 -10 11 -2 Z'), '#7A4A24', { flat: true, lw: 2.4 });
+      K.line(P('M0 -9 L1 -13'), 2.4, '#5C3A1E');
+      ctx.restore();
+      pawsRound(K, '#D9813B', o.wave, false);
+    },
   },
 };
 

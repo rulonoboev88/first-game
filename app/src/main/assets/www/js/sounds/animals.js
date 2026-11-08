@@ -44,6 +44,13 @@ const SYNTH = {
   // Эти звери в жизни почти не «говорят» — им мультяшные звуки.
   mouse: (p) => { for (let i = 0; i < 3; i++) tone({ freq: rnd(2600, 3200), to: rnd(3400, 4000), dur: 0.07, type: 'sine', gain: 0.12, attack: 0.004, at: i * 0.1, pan: p, wet: 0.4 }); },
   rabbit: (p) => tone({ freq: 240, to: 720, dur: 0.28, type: 'sine', gain: 0.2, attack: 0.005, pan: p, wet: 0.5, vibrato: 30, vibratoRate: 18, curve: 'lin' }),
+  // Пока нет записей — мультяшный синтез.
+  bear: (p) => {
+    tone({ freq: 120, to: 85, dur: 0.75, type: 'sawtooth', gain: 0.2, attack: 0.06, release: 0.35, pan: p, wet: 0.6, vibrato: 9, vibratoRate: 22, filter: { type: 'lowpass', freq: 520, q: 3 } });
+    noise({ dur: 0.6, gain: 0.07, type: 'lowpass', freq: 400, attack: 0.06, pan: p, wet: 0.5 });
+  },
+  fox: (p) => { for (let i = 0; i < 2; i++) tone({ freq: 950, to: 620, dur: 0.11, type: 'triangle', gain: 0.17, attack: 0.004, at: i * 0.17, pan: p, wet: 0.5, filter: { type: 'bandpass', freq: 1400, q: 1.2 } }); },
+  squirrel: (p) => { for (let i = 0; i < 7; i++) { tone({ freq: rnd(1900, 2400), to: rnd(1500, 1800), dur: 0.04, type: 'square', gain: 0.06, attack: 0.002, at: i * 0.065, pan: p, wet: 0.4, filter: { type: 'bandpass', freq: 2600, q: 2 } }); } },
   hedgehog: (p) => { for (let i = 0; i < 3; i++) noise({ dur: 0.07, gain: 0.18, type: 'bandpass', freq: 1800, q: 1.2, at: i * 0.11, pan: p, wet: 0.3 }); },
 };
 

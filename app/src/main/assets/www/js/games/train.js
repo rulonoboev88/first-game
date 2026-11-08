@@ -24,7 +24,7 @@ const THEMES = ['farm', 'village', 'lake'];
 const STATION_ANIMALS = {
   farm: ['cow', 'pig', 'sheep', 'goat', 'horse'],
   village: ['dog', 'cat', 'hen', 'rooster', 'mouse'],
-  lake: ['frog', 'owl', 'duck', 'goose', 'rabbit', 'hedgehog'],
+  lake: ['frog', 'owl', 'duck', 'goose', 'rabbit', 'hedgehog', 'bear', 'fox', 'squirrel'],
 };
 const STATION_ICON = { farm: 'cow', village: 'hen', lake: 'frog' };
 
@@ -47,6 +47,7 @@ const EYES = {
   horse: [-13, -8, 13, -8], dog: [-14, -8, 14, -8], cat: [-15, -4, 15, -4], frog: [-22, -26, 22, -26],
   owl: [-16, -6, 16, -6], mouse: [-11, -8, 11, -8], rabbit: [-13, -9, 13, -9], hedgehog: [-11, -8, 11, -8],
   hen: [-14, -10, 14, -10], rooster: [-12, -10, 12, -10], duck: [-13, -10, 13, -10], goose: [-11, -20, 11, -21],
+  bear: [-14, -9, 14, -9], fox: [-12, -11, 12, -11], squirrel: [-11, -9, 11, -9],
 };
 
 // Небо по времени суток: [момент круга, верх, низ, оттенок мира (r,g,b,a), ночь 0..1]

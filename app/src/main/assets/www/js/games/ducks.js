@@ -20,6 +20,65 @@ const BODY = new Path2D('M8 58 C6 76 26 88 52 88 C78 88 94 76 92 58 C90 48 82 46
 const HEAD = new Path2D('M50 40 C44 22 54 8 68 8 C82 8 90 20 86 34 C84 42 76 48 66 48 C58 48 52 46 50 40 Z');
 const BEAK = new Path2D('M84 26 C92 24 100 26 100 30 C100 34 92 36 84 34 Z');
 const WING = new Path2D('M30 58 C36 48 54 50 60 60 C54 70 36 70 30 58 Z');
+const TUFT = new Path2D('M64 10 C60 0 66 -6 70 -1 C72 -6 80 -4 76 4 C74 8 68 10 64 10 Z');
+const ACCS = [null, null, null, null, 'bow', 'glasses', 'bow'];
+
+function darker(h, k) {
+  const n = parseInt(h.slice(1), 16);
+  return `rgb(${[(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.round(v * (1 - k))).join(',')})`;
+}
+/** Резиновый объём: тень по краю, блик, контур. */
+function rubber(ctx, p, fill) {
+  ctx.fillStyle = fill; ctx.fill(p);
+  ctx.save(); ctx.clip(p);
+  ctx.fillStyle = darker(fill, 0.14); ctx.fillRect(-20, -20, 140, 140);
+  ctx.translate(-2.6, -3.6); ctx.fillStyle = fill; ctx.fill(p);
+  ctx.restore();
+  ctx.save(); ctx.clip(p);
+  const g = ctx.createLinearGradient(0, 0, 100, 90);
+  g.addColorStop(0, 'rgba(255,255,255,0.38)'); g.addColorStop(0.4, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(60,20,0,0.06)');
+  ctx.fillStyle = g; ctx.fillRect(-20, -20, 140, 140);
+  ctx.restore();
+  ctx.stroke(p);
+}
+
+/** Резиновая уточка в коробке 100×~88 (вызывать после translate/scale). */
+export function drawRubberDuck(ctx, c, acc) {
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.strokeStyle = INK; ctx.lineWidth = 3.6;
+    rubber(ctx, TUFT, c.body);
+    rubber(ctx, BODY, c.body);
+    rubber(ctx, HEAD, c.body);
+    rubber(ctx, BEAK, c.beak);
+    rubber(ctx, WING, c.wing);
+    // глянцевый блик резины
+    ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.ellipse(60, 17, 6, 3.2, -0.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(26, 60, 7, 3, -0.4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,138,128,0.5)'; ctx.beginPath(); ctx.ellipse(76, 36, 5.5, 3.6, 0, 0, Math.PI * 2); ctx.fill();
+    if (acc === 'glasses') {
+      // солнечные очки
+      ctx.fillStyle = '#2B2B3A';
+      ctx.beginPath(); ctx.ellipse(73, 24, 8.5, 6.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(64, 23); ctx.lineTo(54, 20); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.ellipse(70, 21, 3, 1.6, -0.4, 0, Math.PI * 2); ctx.fill();
+    } else {
+      // живой глаз
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(72, 24, 6, 7, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1C120D'; ctx.beginPath(); ctx.ellipse(74, 25, 3.8, 4.8, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(73, 22.5, 1.6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(75.5, 27.5, 0.7, 0, Math.PI * 2); ctx.fill();
+      ctx.lineWidth = 2.4; ctx.beginPath(); ctx.ellipse(72, 24, 6, 7, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 3.6;
+    }
+    if (acc === 'bow') {
+      ctx.save(); ctx.translate(60, 10); ctx.rotate(-0.3);
+      const b1 = new Path2D('M0 0 C-6 -8 -14 -6 -13 0 C-14 6 -6 8 0 0 Z'), b2 = new Path2D('M0 0 C6 -8 14 -6 13 0 C14 6 6 8 0 0 Z');
+      ctx.lineWidth = 2.4;
+      for (const b of [b1, b2]) { ctx.fillStyle = '#FF6B9A'; ctx.fill(b); ctx.stroke(b); }
+      ctx.fillStyle = '#E64980'; ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+}
 
 export default class DucksGame {
   static erasable = false;
@@ -46,6 +105,7 @@ export default class DucksGame {
       x, y, vx: rnd(-1, 1) * this.u * 0.03, vy: rnd(-1, 1) * this.u * 0.02,
       size: this.duckSize * (baby ? 0.65 : rnd(0.9, 1.1)), c: COLORS[Math.floor(Math.random() * COLORS.length)],
       flip: Math.random() < 0.5, ph: rnd(0, 6), squish: 0, born: this.time, drop: drop ? 1 : 0, spin: 0, baby,
+      acc: baby ? null : ACCS[Math.floor(Math.random() * ACCS.length)],
     };
     this.ducks.push(d);
     return d;
@@ -197,15 +257,7 @@ export default class DucksGame {
     ctx.translate(-50, -78);
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     ctx.strokeStyle = INK; ctx.lineWidth = 3.6;
-    ctx.fillStyle = d.c.body; ctx.fill(BODY); ctx.stroke(BODY);
-    ctx.fill(HEAD); ctx.stroke(HEAD);
-    ctx.fillStyle = d.c.beak; ctx.fill(BEAK); ctx.stroke(BEAK);
-    ctx.fillStyle = d.c.wing; ctx.fill(WING); ctx.stroke(WING);
-    // глаз и блик
-    ctx.fillStyle = INK; ctx.beginPath(); ctx.ellipse(72, 24, 4, 5, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(73.5, 22, 1.4, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.ellipse(60, 18, 6, 3.5, -0.5, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,138,128,0.45)'; ctx.beginPath(); ctx.arc(78, 34, 4, 0, Math.PI * 2); ctx.fill();
+    drawRubberDuck(ctx, d.c, d.acc);
     ctx.restore();
     // вода у «ватерлинии» — уточка сидит в воде
     ctx.beginPath();

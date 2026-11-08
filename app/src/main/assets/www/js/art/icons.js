@@ -1,5 +1,10 @@
 // Иконки плиток меню. Каждая функция рисует в квадрат S×S (CSS-пиксели).
-import { drawChick, INK } from './chick.js';
+import { INK } from './chick.js';
+import { drawBird } from './birds.js';
+import { drawAnimal } from './animals.js';
+import { drawFish } from './sea.js';
+import { drawLoco } from './train.js';
+import { drawRubberDuck } from '../games/ducks.js';
 
 function circle(ctx, x, y, r, fill, stroke = INK, lw) {
   ctx.beginPath();
@@ -34,7 +39,7 @@ export const ICONS = {
   },
 
   chicks(ctx, S) {
-    drawChick(ctx, S * 0.5, S * 0.93, S * 0.86);
+    drawBird(ctx, 'chick', S * 0.5, S * 0.88, S * 0.78, { step: 0.25 });
   },
 
   bubbles(ctx, S) {
@@ -81,20 +86,7 @@ export const ICONS = {
   },
 
   fish(ctx, S) {
-    const lw = S * 0.028;
-    ctx.save();
-    ctx.translate(S * 0.5, S * 0.52);
-    ctx.beginPath();
-    ctx.moveTo(-S * 0.18, 0);
-    ctx.lineTo(-S * 0.36, -S * 0.15);
-    ctx.lineTo(-S * 0.36, S * 0.15);
-    ctx.closePath();
-    ctx.fillStyle = '#FFA94D'; ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = lw; ctx.stroke();
-    ctx.beginPath();
-    ctx.ellipse(S * 0.04, 0, S * 0.27, S * 0.19, 0, 0, Math.PI * 2);
-    ctx.fillStyle = '#FF922B'; ctx.fill(); ctx.stroke();
-    circle(ctx, S * 0.16, -S * 0.04, S * 0.035, INK, null);
-    ctx.restore();
+    drawFish(ctx, 'clown', S * 0.52, S * 0.52, S * 0.78, 1, { t: 0.3 });
   },
 
   sky(ctx, S) {
@@ -125,66 +117,36 @@ export const ICONS = {
 
   hide(ctx, S) {
     const lw = S * 0.026;
-    // уши
-    ctx.fillStyle = '#C08457'; ctx.strokeStyle = INK; ctx.lineWidth = lw;
-    for (const dx of [-0.1, 0.1]) {
-      ctx.beginPath();
-      ctx.ellipse(S * (0.5 + dx), S * 0.3, S * 0.06, S * 0.14, dx * 2, 0, Math.PI * 2);
-      ctx.fill(); ctx.stroke();
-    }
-    // куст
-    ctx.fillStyle = '#69DB7C';
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, S, S * 0.62); ctx.clip();
+    drawAnimal(ctx, 'rabbit', S * 0.5, S * 0.47, S * 0.6, { body: false, paws: false, look: 0.6 });
+    ctx.restore();
+    ctx.fillStyle = '#69DB7C'; ctx.strokeStyle = INK; ctx.lineWidth = lw;
     ctx.beginPath();
-    ctx.arc(S * 0.3, S * 0.62, S * 0.17, Math.PI * 0.5, Math.PI * 1.6);
-    ctx.arc(S * 0.5, S * 0.48, S * 0.18, Math.PI * 1.1, Math.PI * 1.9);
-    ctx.arc(S * 0.7, S * 0.62, S * 0.17, Math.PI * 1.4, Math.PI * 0.5);
+    ctx.arc(S * 0.28, S * 0.74, S * 0.16, Math.PI * 0.5, Math.PI * 1.6);
+    ctx.arc(S * 0.5, S * 0.62, S * 0.18, Math.PI * 1.1, Math.PI * 1.9);
+    ctx.arc(S * 0.72, S * 0.74, S * 0.16, Math.PI * 1.4, Math.PI * 0.5);
     ctx.closePath(); ctx.fill(); ctx.stroke();
   },
 
   ducks(ctx, S) {
-    const lw = S * 0.028;
-    ctx.strokeStyle = INK; ctx.lineWidth = lw;
-    ctx.fillStyle = '#FFD43B';
-    ctx.beginPath();
-    ctx.ellipse(S * 0.46, S * 0.62, S * 0.27, S * 0.16, 0, 0, Math.PI * 2);
-    ctx.fill(); ctx.stroke();
-    circle(ctx, S * 0.62, S * 0.38, S * 0.14, '#FFD43B', INK, lw);
-    ctx.beginPath();
-    ctx.moveTo(S * 0.74, S * 0.36); ctx.quadraticCurveTo(S * 0.88, S * 0.38, S * 0.86, S * 0.44);
-    ctx.quadraticCurveTo(S * 0.8, S * 0.46, S * 0.73, S * 0.43);
-    ctx.fillStyle = '#FF922B'; ctx.fill(); ctx.stroke();
-    circle(ctx, S * 0.65, S * 0.35, S * 0.025, INK, null);
+    ctx.save();
+    ctx.translate(S * 0.06, S * 0.12);
+    ctx.scale(S * 0.0088, S * 0.0088);
+    drawRubberDuck(ctx, { body: '#FFD43B', wing: '#F5C518', beak: '#FF922B' }, 'bow');
+    ctx.restore();
   },
 
   train(ctx, S) {
-    const lw = S * 0.026;
-    roundRect(ctx, S * 0.18, S * 0.42, S * 0.5, S * 0.26, S * 0.04, '#FF6B6B', lw);
-    roundRect(ctx, S * 0.5, S * 0.24, S * 0.22, S * 0.44, S * 0.04, '#FF6B6B', lw);
-    roundRect(ctx, S * 0.55, S * 0.3, S * 0.12, S * 0.11, S * 0.02, '#D0EBFF', lw);
-    roundRect(ctx, S * 0.24, S * 0.28, S * 0.08, S * 0.14, S * 0.02, '#495057', lw);
-    for (const x of [0.3, 0.6]) circle(ctx, S * x, S * 0.72, S * 0.08, '#495057', INK, lw);
+    ctx.save();
+    ctx.translate(S * 0.08, S * 0.8);
+    ctx.scale(S * 0.6, S * 0.6);
+    drawLoco(ctx, { ang: 0.6 });
+    ctx.restore();
   },
 
   animals(ctx, S) {
-    const lw = S * 0.026;
-    ctx.strokeStyle = INK; ctx.lineWidth = lw;
-    // кошачья мордочка, выглядывающая снизу
-    ctx.fillStyle = '#FFA94D';
-    for (const dx of [-1, 1]) {
-      ctx.beginPath();
-      ctx.moveTo(S * (0.5 + dx * 0.24), S * 0.5);
-      ctx.lineTo(S * (0.5 + dx * 0.27), S * 0.22);
-      ctx.lineTo(S * (0.5 + dx * 0.06), S * 0.38);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-    }
-    ctx.beginPath();
-    ctx.ellipse(S * 0.5, S * 0.62, S * 0.3, S * 0.27, 0, 0, Math.PI * 2);
-    ctx.fill(); ctx.stroke();
-    circle(ctx, S * 0.4, S * 0.58, S * 0.03, INK, null);
-    circle(ctx, S * 0.6, S * 0.58, S * 0.03, INK, null);
-    ctx.beginPath();
-    ctx.moveTo(S * 0.47, S * 0.67); ctx.quadraticCurveTo(S * 0.5, S * 0.71, S * 0.53, S * 0.67);
-    ctx.stroke();
+    drawAnimal(ctx, 'dog', S * 0.47, S * 0.56, S * 0.76, { body: false, paws: false });
   },
 
   ink(ctx, S) {
@@ -229,6 +191,26 @@ export const ICONS = {
     ctx.beginPath(); ctx.roundRect(S * 0.42, S * 0.12, S * 0.18, S * 0.46, S * 0.09); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#FF6B6B';
     ctx.beginPath(); ctx.ellipse(S * 0.51, S * 0.5, S * 0.07, S * 0.06, 0, 0, Math.PI * 2); ctx.fill();
+  },
+
+  ebru(ctx, S) {
+    // кольца краски, протянутые пальцем в завиток
+    const cols = ['#1D3557', '#E9C46A', '#E63946', '#2A9D8F', '#F3EDE1', '#F4A261'];
+    const cx = S * 0.5, cy = S * 0.5;
+    cols.forEach((c, i) => {
+      const R = S * (0.4 - i * 0.065);
+      ctx.beginPath();
+      for (let k = 0; k <= 96; k++) {
+        const a = (k / 96) * Math.PI * 2;
+        const r = R + Math.sin(a * 2 + i * 0.5) * S * 0.025 * (1 + i * 0.3);
+        const sw = Math.exp(-((a - Math.PI * 0.5) ** 2) * 1.5) * S * 0.08 * (1 - i * 0.12);
+        const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r + sw;
+        k ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = c; ctx.fill();
+      ctx.lineWidth = S * 0.008; ctx.strokeStyle = 'rgba(40,20,10,0.35)'; ctx.stroke();
+    });
   },
 
   surprise(ctx, S) {
