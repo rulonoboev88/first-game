@@ -1,6 +1,8 @@
 // Салют. Тёмно-синее небо с лёгким градиентом.
-// Тап → снизу сама вылетает ракета. Если вести палец — ракета летит за ним и сыплет искрами.
-// Отпустил (или просто тап) → ракета делает пару петель и БАБАХ — разноцветный салют.
+// Тап → снизу вылетает ракета, долетает до места касания и БАБАХ — разноцветный салют.
+// Держишь палец — ракета подлетает и «прилипает» к пальцу: её можно водить и крутить.
+// Отпустил на ходу — ракета летит дальше сама, как камень в кёрлинге: по инерции, понемногу замедляясь,
+// отскакивает от краёв экрана и взрывается, когда выдохлась (или через несколько секунд).
 // Бывают фигурные: сердечко, звезда, цыплёнок. Звук — весёлые хлопки и «бабахи» с треском.
 import { tone, noise, chime, panFor } from '../core/audio.js';
 import { haptic } from '../core/haptics.js';
@@ -77,7 +79,7 @@ export default class FireworksGame {
     const { h } = this.stage;
     const r = {
       x: p.x + rnd(-1, 1) * this.u * 0.05, y: h + 10, vx: 0, vy: -this.u * 1.6,
-      tx: p.x, ty: p.y, held: p.id, state: 'fly', t: 0, loopT: 0,
+      tx: p.x, ty: p.y, held: p.id, state: 'fly', t: 0, t0: this.time, bounces: 0,
       palette: pick(PALETTES), trail: [],
     };
     this.rockets.push(r);
@@ -100,37 +102,77 @@ export default class FireworksGame {
 
   onUp(p) {
     const r = p.data.r;
-    if (r && r.held === p.id) r.held = null; // дальше — петли и взрыв
+    if (!r || r.held !== p.id) return;
+    r.held = null;
+    const quick = this.time - r.t0 < 0.3 && !p.moved;
+    if (r.state === 'fly' && quick) return;          // просто тап: долетит до точки и взорвётся
+    // бросок: ракета получает скорость пальца (если была у пальца) или летит с той, что есть
+    if (r.state === 'drag') {
+      const max = this.u * 4.5;
+      let vx = p.vx || 0, vy = p.vy || 0;
+      const v = Math.hypot(vx, vy);
+      if (v > max) { vx *= max / v; vy *= max / v; }
+      r.vx = vx; r.vy = vy;
+    }
+    r.state = 'free'; r.t = 0;
   }
 
   updateRocket(r, dt) {
     r.t += dt;
+    const { w, h } = this.stage;
     const sp = this.u * 1.5;
     if (r.state === 'fly') {
-      // летим к цели (к пальцу)
+      // летим к цели: к пальцу или к месту тапа
       const dx = r.tx - r.x, dy = r.ty - r.y, d = Math.hypot(dx, dy) || 1;
       const want = { x: (dx / d) * sp, y: (dy / d) * sp };
       r.vx += (want.x - r.vx) * Math.min(1, dt * 6);
       r.vy += (want.y - r.vy) * Math.min(1, dt * 6);
-      if (d < this.u * 0.04) { r.vx *= 0.8; r.vy *= 0.8; }
-      if (!r.held && (d < this.u * 0.08 || r.t > 2.2)) {
-        r.state = 'loop'; r.t = 0;
-        r.cx = r.x; r.cy = r.y; r.ang = Math.atan2(r.vy, r.vx); r.spin = Math.random() < 0.5 ? 1 : -1;
-        r.R = this.u * rnd(0.07, 0.11); r.loops = rnd(1.6, 2.3);
-      }
-    } else if (r.state === 'loop') {
-      // пара петель «бантиком»
-      const ang = r.spin * (r.t / 0.6) * Math.PI * 2;
-      const nx = r.cx + Math.cos(r.ang + ang) * r.R * Math.sin(r.t * 2.5);
-      const ny = r.cy + Math.sin(r.ang + ang) * r.R - r.t * this.u * 0.08;
-      r.vx = (nx - r.x) / dt; r.vy = (ny - r.y) / dt;
-      if (r.t > r.loops * 0.6) { this.explode(r); r.dead = true; return; }
+      if (r.held != null && d < this.u * 0.06) { r.state = 'drag'; r.t = 0; }       // долетела до пальца — «прилипла»
+      else if (r.held == null && (d < this.u * 0.06 || r.t > 2.2)) { this.explode(r); r.dead = true; return; }
+    } else if (r.state === 'drag') {
+      // у пальца: идёт за ним плотно, без кружения; скорость — по реальному движению
+      const nx = r.x + (r.tx - r.x) * Math.min(1, dt * 22);
+      const ny = r.y + (r.ty - r.y) * Math.min(1, dt * 22);
+      r.vx = (nx - r.x) / Math.max(dt, 1e-3); r.vy = (ny - r.y) / Math.max(dt, 1e-3);
+      r.x = nx; r.y = ny;
+      this.sparks(r, Math.hypot(r.vx, r.vy) > this.u * 0.3 ? 3 : 1);
+      return;
+    } else if (r.state === 'free') {
+      // свободный полёт: инерция и лёгкое торможение
+      const k = Math.exp(-0.75 * dt);
+      r.vx *= k; r.vy *= k;
+      const m = this.u * 0.03;
+      let hit = false;
+      if (r.x < m && r.vx < 0) { r.x = m; r.vx = -r.vx * 0.85; hit = true; }
+      if (r.x > w - m && r.vx > 0) { r.x = w - m; r.vx = -r.vx * 0.85; hit = true; }
+      if (r.y < m && r.vy < 0) { r.y = m; r.vy = -r.vy * 0.85; hit = true; }
+      if (r.y > h - m && r.vy > 0) { r.y = h - m; r.vy = -r.vy * 0.85; hit = true; }
+      if (hit) this.bounce(r);
+      const v = Math.hypot(r.vx, r.vy);
+      if ((v < this.u * 0.35 && r.t > 0.25) || r.t > 4 || r.bounces > 5) { this.explode(r); r.dead = true; return; }
     }
     r.x += r.vx * dt; r.y += r.vy * dt;
-    // искры за ракетой
-    for (let i = 0; i < 3; i++) {
+    this.sparks(r, 3);
+  }
+
+  /** Искры за ракетой. */
+  sparks(r, n) {
+    for (let i = 0; i < n; i++) {
       this.parts.push({ x: r.x, y: r.y, vx: -r.vx * 0.15 + rnd(-40, 40), vy: -r.vy * 0.15 + rnd(-40, 40) + this.u * 0.1, life: 0, max: rnd(0.25, 0.55), c: Math.random() < 0.5 ? '#FFE8A3' : r.palette[0], r: this.u * 0.004, drag: 3, g: this.u * 0.3 });
     }
+  }
+
+  /** Отскок от края: «дзинь», вспышка искр. */
+  bounce(r) {
+    r.bounces++;
+    const p = this.pan(r.x);
+    tone({ freq: rnd(900, 1200), to: rnd(1500, 1800), dur: 0.09, type: 'triangle', gain: 0.06, attack: 0.002, pan: p, wet: 0.6 });
+    noise({ dur: 0.05, gain: 0.05, type: 'bandpass', freq: 3500, q: 2, pan: p, wet: 0.4 });
+    for (let i = 0; i < 14; i++) {
+      const a = rnd(0, Math.PI * 2), s = this.u * rnd(0.2, 0.6);
+      this.parts.push({ x: r.x, y: r.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0, max: rnd(0.2, 0.4), c: '#FFF3BF', r: this.u * 0.004, drag: 4, g: this.u * 0.2 });
+    }
+    haptic(0);
   }
 
   // ---------- Взрыв ----------
@@ -201,7 +243,7 @@ export default class FireworksGame {
 
   resize(prev, next) {
     const sx = next.w / prev.w, sy = next.h / prev.h;
-    for (const r of this.rockets) { r.x *= sx; r.y *= sy; r.tx *= sx; r.ty *= sy; if (r.cx) { r.cx *= sx; r.cy *= sy; } }
+    for (const r of this.rockets) { r.x *= sx; r.y *= sy; r.tx *= sx; r.ty *= sy; }
     this.parts = [];
   }
 
