@@ -2,7 +2,9 @@
 // Каждое рисуется в коробке ≈ 80×80 единиц с центром в (0,0); size — ширина в пикселях на 100 единиц.
 import { kit, INK, shadeTone as tone } from './animals.js';
 
-export const FOODS = ['carrot', 'apple', 'bone', 'fish', 'cheese', 'honey', 'acorn', 'cabbage', 'hay', 'corn', 'bread', 'milk', 'fly', 'melon'];
+export const FOODS = ['carrot', 'apple', 'bone', 'fish', 'cheese', 'honey', 'acorn', 'cabbage', 'hay', 'corn', 'bread', 'milk', 'fly', 'melon',
+  'pumpkin', 'potato', 'oats', 'cucumber', 'pear', 'sausage', 'drumstick', 'petfood', 'mosquito', 'dragonfly', 'beetle', 'seeds',
+  'mushroom', 'strawberry', 'raspberry', 'egg', 'hazelnut', 'pinecone', 'peas', 'lettuce'];
 
 const P = (d) => new Path2D(d);
 const E = (x, y, rx, ry, rot = 0) => { const p = new Path2D(); p.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2); return p; };
@@ -219,6 +221,262 @@ const ART = {
       ctx.fillStyle = '#3B2618'; ctx.beginPath(); ctx.ellipse(x, y, 2.2, 3.4, x * 0.02, 0, Math.PI * 2); ctx.fill();
     }
     shine(ctx, -18, -10, 8, 2, 0.1, 0.5);
+  },
+
+  pumpkin(K) {
+    const ctx = K.ctx;
+    K.line(P('M2 -26 Q4 -38 12 -40'), 6);
+    K.line(P('M2 -26 Q4 -38 12 -40'), 3, '#6E8B2E');
+    const p = new Path2D();
+    for (const [x, rx] of [[-20, 18], [20, 18], [-8, 17], [8, 17], [0, 15]]) { p.moveTo(x + rx, 4); p.ellipse(x, 4, rx, 30, 0, 0, Math.PI * 2); }
+    union(K, p, '#FF9A2E', [-38, -26, 38, 34]);
+    K.line(P('M-8 -24 Q-14 4 -8 32 M8 -24 Q14 4 8 32 M-22 -22 Q-34 4 -22 30 M22 -22 Q34 4 22 30'), 2.4, 'rgba(160,70,0,0.55)');
+    K.part(P('M8 -32 C20 -44 34 -38 32 -30 C24 -26 14 -26 8 -32 Z'), '#5DBB4C', { flat: true, lw: 2.4 });
+    shine(ctx, -24, -6, 3, 9, 0.2, 0.55);
+  },
+  potato(K) {
+    const ctx = K.ctx;
+    const p = P('M-36 2 C-38 -18 -18 -26 2 -24 C24 -22 38 -12 37 4 C36 20 20 28 -2 27 C-24 26 -35 18 -36 2 Z');
+    K.part(p, '#D9A866', { box: [-38, -26, 38, 28] });
+    for (const [x, y] of [[-18, -8], [10, -12], [20, 10], [-6, 12], [-26, 10]]) {
+      K.mark(E(x, y, 2.6, 1.8, 0.4), '#A9783E');
+    }
+    shine(ctx, -16, -14, 9, 3, -0.3, 0.55);
+  },
+  oats(K) {
+    const ctx = K.ctx;
+    // пучок колосков овса: стебли и свисающие зёрнышки-колоски
+    const stalks = [[-0.32, 70], [0, 76], [0.32, 70]];
+    for (const [a, h] of stalks) {
+      ctx.save(); ctx.translate(0, 38); ctx.rotate(a);
+      K.line(P(`M0 0 Q2 -${h * 0.5} 0 -${h}`), 4.6);
+      K.line(P(`M0 0 Q2 -${h * 0.5} 0 -${h}`), 2.4, '#D8B45A');
+      for (let i = 0; i < 5; i++) {
+        const y = -h + 4 + i * 10;
+        for (const s2 of [-1, 1]) {
+          if (i === 0 && s2 === 1) continue;
+          const x2 = s2 * (8 + i * 1.5), y2 = y + 9;
+          K.line(P(`M0 ${y} Q${s2 * 4} ${y + 1} ${x2} ${y2 - 5}`), 1.8, '#B8933F');
+          ctx.save(); ctx.translate(x2, y2); ctx.rotate(s2 * -0.25);
+          K.part(P('M0 -7 C5 -4 5 4 0 8 C-5 4 -5 -4 0 -7 Z'), '#F2D06B', { flat: true, lw: 2 });
+          ctx.restore();
+        }
+      }
+      ctx.restore();
+    }
+    K.part(P('M-9 22 L9 22 L10 31 Q0 34 -10 31 Z'), '#E8553D', { flat: true, lw: 2.2 });
+  },
+  cucumber(K) {
+    const ctx = K.ctx;
+    ctx.rotate(-0.5);
+    const c = P('M-38 -6 C-38 -16 -26 -16 0 -15 C26 -14 38 -14 38 -2 C38 10 26 13 0 13 C-26 13 -38 6 -38 -6 Z');
+    K.part(c, '#4FAF45', { box: [-38, -16, 38, 13] });
+    K.clip(c, () => {
+      for (const [x, y] of [[-24, -6], [-10, 2], [4, -6], [18, 2], [28, -6], [-30, 4], [10, -10]]) {
+        K.mark(C(x, y, 1.8), '#C8EFA4');
+      }
+    });
+    K.part(P('M36 -4 Q44 -6 46 -2 Q44 2 36 2 Z'), '#7A5A2E', { flat: true, lw: 2 });
+    shine(ctx, -10, -9, 14, 2, 0, 0.5);
+  },
+  pear(K) {
+    const ctx = K.ctx;
+    K.line(P('M0 -30 Q2 -40 8 -42'), 4.2);
+    K.line(P('M0 -30 Q2 -40 8 -42'), 2, '#8A5A32');
+    K.part(P('M6 -34 C12 -44 26 -44 28 -38 C22 -32 12 -30 6 -34 Z'), '#5DBB4C', { box: [6, -44, 28, -30], lw: 2.4 });
+    const p = P('M0 -30 C-10 -30 -12 -16 -14 -8 C-30 0 -32 34 0 36 C32 34 30 0 14 -8 C12 -16 10 -30 0 -30 Z');
+    K.part(p, '#C9DA4E', { box: [-30, -30, 30, 36] });
+    K.clip(p, () => { K.mark(E(14, 14, 10, 12), 'rgba(240,140,60,0.3)'); });
+    shine(ctx, -14, 6, 4, 10, 0.3, 0.6);
+  },
+  sausage(K) {
+    const ctx = K.ctx;
+    ctx.rotate(-0.25);
+    const p = P('M-34 -2 C-38 -14 -26 -18 -14 -14 Q0 -10 14 -14 C26 -18 38 -14 34 -2 C30 10 18 12 0 10 C-18 12 -30 10 -34 -2 Z');
+    K.part(p, '#E0735A', { box: [-38, -18, 38, 12] });
+    for (const x of [-38, 38]) K.line(P(`M${x * 0.92} -6 L${x * 1.08} -9 M${x * 0.92} -6 L${x * 1.08} -2`), 2.6);
+    K.line(P('M-18 -6 Q-14 -2 -18 2 M0 -4 Q4 0 0 4 M18 -6 Q22 -2 18 2'), 2, 'rgba(120,30,20,0.45)');
+    shine(ctx, -14, -10, 12, 2, 0, 0.6);
+  },
+  drumstick(K) {
+    const ctx = K.ctx;
+    ctx.rotate(0.6);
+    const bone = new Path2D();
+    bone.roundRect(-5, 8, 10, 26, 3);
+    bone.moveTo(4, 36); bone.arc(-4, 36, 6, 0, Math.PI * 2); bone.moveTo(12, 36); bone.arc(5, 36, 6, 0, Math.PI * 2);
+    union(K, bone, '#FFF3DC', [-10, 8, 10, 42]);
+    const meat = P('M0 -36 C22 -36 28 -12 18 2 C12 10 8 12 4 14 L-4 14 C-8 12 -12 10 -18 2 C-28 -12 -22 -36 0 -36 Z');
+    K.part(meat, '#C9772E', { box: [-26, -36, 26, 14] });
+    K.clip(meat, () => K.mark(E(-6, -22, 10, 6, -0.4), '#E39A4E'));
+    shine(ctx, -10, -24, 6, 2.5, -0.5, 0.6);
+  },
+  petfood(K) {
+    const ctx = K.ctx;
+    // банка корма: крышка-кольцо, этикетка с лапкой
+    const body = P('M-30 -16 L30 -16 L30 26 Q30 32 24 32 L-24 32 Q-30 32 -30 26 Z');
+    K.part(body, '#B9C4D0', { box: [-30, -16, 30, 32] });
+    const label = P('M-30 -8 L30 -8 L30 24 L-30 24 Z');
+    K.part(label, '#FF8FA3', { flat: true, lw: 2.4 });
+    K.clip(label, () => K.mark(P('M-30 16 L30 16 L30 24 L-30 24 Z'), '#F06A85'));
+    // лапка
+    K.part(E(0, 9, 7, 6), '#FFFFFF', { flat: true, lw: 1.8 });
+    for (const [x, y] of [[-8, -1], [-3, -4], [3, -4], [8, -1]]) K.part(E(x, y, 2.6, 3), '#FFFFFF', { flat: true, lw: 1.6 });
+    K.part(E(0, -16, 30, 7), '#DCE3EA', { box: [-30, -23, 30, -9], lw: 3.2 });
+    K.line(E(0, -16, 22, 4.5), 2, 'rgba(60,70,90,0.45)');
+    K.part(P('M-6 -18 Q0 -26 6 -18 Q0 -20 -6 -18 Z'), '#C3CCD6', { flat: true, lw: 2 });
+    shine(ctx, -22, 10, 3, 9, 0, 0.5);
+  },
+  mosquito(K) {
+    const ctx = K.ctx;
+    ctx.globalAlpha = 0.8;
+    for (const s of [-1, 1]) K.part(E(s * 14, -14, 13, 6, s * -0.5), '#E3F4FF', { flat: true, lw: 2.2 });
+    ctx.globalAlpha = 1;
+    K.line(P('M-6 6 L-20 22 L-24 30 M0 8 L0 30 M6 6 L20 22 L24 30 M-4 0 L-18 6 M4 0 L18 6'), 2.2);
+    K.part(E(0, 4, 6, 12), '#8A7A6A', { box: [-6, -8, 6, 16], lw: 2.4 });
+    K.part(C(0, -12, 7), '#8A7A6A', { box: [-7, -19, 7, -5], lw: 2.4 });
+    K.line(P('M0 -18 L0 -30'), 2.2);
+    for (const s of [-1, 1]) {
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s * 3, -13, 3.6, 0, Math.PI * 2); ctx.fill();
+      ctx.lineWidth = 1.8; ctx.strokeStyle = INK; ctx.stroke();
+      ctx.fillStyle = '#1C120D'; ctx.beginPath(); ctx.arc(s * 3, -12.5, 1.8, 0, Math.PI * 2); ctx.fill();
+    }
+  },
+  dragonfly(K) {
+    const ctx = K.ctx;
+    ctx.rotate(-0.3);
+    ctx.globalAlpha = 0.85;
+    for (const [y, s] of [[-12, -1], [-12, 1], [-2, -1], [-2, 1]]) K.part(E(s * 20, y, 19, 5.5, s * (y < -5 ? -0.15 : 0.15)), '#CFEFFF', { flat: true, lw: 2 });
+    ctx.globalAlpha = 1;
+    K.part(P('M-3 -6 L3 -6 L2.5 38 Q0 41 -2.5 38 Z'), '#3FB6A8', { box: [-3, -6, 3, 40], lw: 2.4 });
+    K.clip(P('M-3 -6 L3 -6 L2.5 38 Q0 41 -2.5 38 Z'), () => K.line(P('M-4 6 L4 6 M-4 14 L4 14 M-4 22 L4 22 M-4 30 L4 30'), 1.4, 'rgba(0,60,60,0.5)'));
+    K.part(E(0, -12, 6, 8), '#3FB6A8', { box: [-6, -20, 6, -4], lw: 2.4 });
+    for (const s of [-1, 1]) {
+      K.part(C(s * 6, -22, 5.5), '#57C9E8', { flat: true, lw: 2.2 });
+      ctx.fillStyle = '#1C120D'; ctx.beginPath(); ctx.arc(s * 6.5, -21.5, 2.4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s * 6, -23, 1, 0, Math.PI * 2); ctx.fill();
+    }
+  },
+  beetle(K) {
+    const ctx = K.ctx;
+    // божья коровка-жучок
+    K.line(P('M-20 -8 L-32 -14 M-22 6 L-34 6 M-20 18 L-30 26 M20 -8 L32 -14 M22 6 L34 6 M20 18 L30 26'), 3);
+    K.line(P('M-6 -28 Q-10 -36 -16 -38 M6 -28 Q10 -36 16 -38'), 2.4);
+    K.part(E(0, -22, 13, 9), '#3B3B48', { box: [-13, -31, 13, -13], lw: 2.8 });
+    const shell = E(0, 6, 26, 26);
+    K.part(shell, '#EF4B3F', { box: [-26, -20, 26, 32] });
+    K.clip(shell, () => { for (const [x, y, r] of [[-12, -4, 5], [12, -4, 5], [-14, 14, 4.5], [14, 14, 4.5], [0, 24, 4]]) K.mark(C(x, y, r), '#2B2B35'); });
+    K.line(P('M0 -20 L0 32'), 2.6);
+    for (const s of [-1, 1]) {
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s * 5, -24, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1C120D'; ctx.beginPath(); ctx.arc(s * 5, -23.5, 1.5, 0, Math.PI * 2); ctx.fill();
+    }
+    shine(ctx, -12, -8, 4, 7, 0.6, 0.55);
+  },
+  seeds(K) {
+    const ctx = K.ctx;
+    // горка семечек подсолнуха
+    const pile = [[-18, 16, 0.4], [-4, 18, -0.2], [10, 16, 0.3], [22, 18, -0.4], [-10, 6, -0.5], [4, 4, 0.2], [16, 6, -0.1], [-2, -6, 0.6], [-22, 22, 0.9], [26, 24, 0.1]];
+    for (const [x, y, a] of pile) {
+      ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+      const sd = P('M0 -11 C7 -6 7 6 0 11 C-7 6 -7 -6 0 -11 Z');
+      K.part(sd, '#3B3B48', { flat: true, lw: 2.2 });
+      K.clip(sd, () => K.line(P('M-3 -9 L-3 9 M3 -9 L3 9'), 1.6, 'rgba(255,255,255,0.55)'));
+      ctx.restore();
+    }
+    // маленький цветок подсолнуха сверху
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      K.part(E(Math.cos(a) * 13, -22 + Math.sin(a) * 13, 6, 3.5, a), '#FFD43B', { flat: true, lw: 1.8 });
+    }
+    K.part(C(0, -22, 9), '#7A4E2A', { flat: true, lw: 2.2 });
+  },
+  mushroom(K) {
+    const ctx = K.ctx;
+    const stem = P('M-11 -2 C-13 14 -15 28 -10 32 Q0 36 10 32 C15 28 13 14 11 -2 Z');
+    K.part(stem, '#FFF3DC', { box: [-15, -2, 15, 34] });
+    const cap = P('M-36 2 C-38 -24 -16 -36 0 -36 C16 -36 38 -24 36 2 Q0 10 -36 2 Z');
+    K.part(cap, '#B5652E', { box: [-38, -36, 38, 6] });
+    K.clip(cap, () => K.mark(P('M-40 -4 Q0 6 40 -4 L40 10 L-40 10 Z'), '#8F4E22'));
+    K.line(cap, 3.2);
+    shine(ctx, -16, -22, 8, 3.5, -0.5, 0.55);
+    K.part(P('M18 30 C22 22 30 22 32 30 C28 32 22 32 18 30 Z'), '#7CC35A', { flat: true, lw: 2 });
+  },
+  strawberry(K) {
+    const ctx = K.ctx;
+    const b = P('M0 36 C-20 28 -34 6 -32 -10 C-30 -22 -18 -26 0 -22 C18 -26 30 -22 32 -10 C34 6 20 28 0 36 Z');
+    K.part(b, '#F0453B', { box: [-34, -26, 34, 36] });
+    for (const [x, y] of [[-16, -8], [0, -10], [16, -8], [-20, 6], [-6, 4], [8, 4], [20, 6], [-12, 18], [2, 18], [12, 18], [-4, 28]]) {
+      ctx.fillStyle = '#FFE680'; ctx.beginPath(); ctx.ellipse(x, y, 1.8, 2.6, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    K.part(P('M0 -22 L-18 -30 L-8 -24 L-14 -36 L0 -26 L14 -36 L8 -24 L18 -30 Z'), '#5DBB4C', { flat: true, lw: 2.4 });
+    K.line(P('M0 -26 Q1 -34 4 -38'), 3, '#5DBB4C');
+    shine(ctx, -18, -10, 3, 8, 0.4, 0.55);
+  },
+  raspberry(K) {
+    const ctx = K.ctx;
+    const p = new Path2D();
+    const dr = [];
+    for (let r = 0; r < 5; r++) for (let c = 0; c < 5 - Math.abs(r - 1.5) * 0.9; c++) {
+      const w = 5 - Math.abs(r - 1.5) * 0.9;
+      dr.push([(c - (w - 1) / 2) * 12, -16 + r * 12]);
+    }
+    for (const [x, y] of dr) { p.moveTo(x + 7, y); p.arc(x, y, 7, 0, Math.PI * 2); }
+    union(K, p, '#E8336D', [-32, -24, 32, 34]);
+    for (const [x, y] of dr) { K.line(new Path2D(`M${x + 5} ${y + 3} A6 6 0 0 1 ${x - 3} ${y + 5}`), 1.6, 'rgba(120,0,40,0.35)'); shine(ctx, x - 2.5, y - 2.5, 1.6, 1.6, 0, 0.7); }
+    K.part(P('M0 -22 L-16 -30 L-6 -24 L-10 -36 L0 -26 L10 -36 L6 -24 L16 -30 Z'), '#5DBB4C', { flat: true, lw: 2.2 });
+  },
+  egg(K) {
+    const ctx = K.ctx;
+    const e = P('M0 -36 C18 -36 30 -6 30 10 C30 28 16 36 0 36 C-16 36 -30 28 -30 10 C-30 -6 -18 -36 0 -36 Z');
+    K.part(e, '#FFF7EC', { box: [-30, -36, 30, 36] });
+    K.clip(e, () => K.mark(E(10, 22, 22, 16), 'rgba(230,200,160,0.35)'));
+    shine(ctx, -12, -12, 5, 11, 0.35, 0.8);
+  },
+  hazelnut(K) {
+    const ctx = K.ctx;
+    const nut = P('M0 -26 C20 -26 32 -6 30 12 C28 30 14 36 0 36 C-14 36 -28 30 -30 12 C-32 -6 -20 -26 0 -26 Z');
+    K.part(nut, '#B87A3E', { box: [-32, -26, 32, 36] });
+    K.clip(nut, () => K.line(P('M-6 -20 Q-14 8 -8 34 M8 -20 Q14 8 10 34'), 1.8, 'rgba(80,40,10,0.35)'));
+    const cap = P('M-24 -12 C-26 -30 -8 -34 0 -34 C8 -34 26 -30 24 -12 Q0 -6 -24 -12 Z');
+    K.part(cap, '#E8D29A', { box: [-26, -34, 26, -8] });
+    K.line(P('M0 -34 Q2 -40 6 -42'), 3);
+    shine(ctx, -14, 4, 4, 10, 0.25, 0.5);
+  },
+  pinecone(K) {
+    const ctx = K.ctx;
+    ctx.rotate(0.2);
+    const body = E(0, 4, 22, 34);
+    K.part(body, '#9A5E30', { box: [-22, -30, 22, 38] });
+    K.clip(body, () => {
+      for (let r = -30; r < 40; r += 9) for (let c = -24; c < 26; c += 11) {
+        const ox = (Math.round(r / 9) % 2) * 5.5;
+        const sc = P(`M${c + ox - 6} ${r} Q${c + ox} ${r + 9} ${c + ox + 6} ${r} Q${c + ox} ${r + 3} ${c + ox - 6} ${r} Z`);
+        K.mark(sc, '#C88A52'); K.line(sc, 1.6, 'rgba(60,30,10,0.55)');
+      }
+    });
+    K.line(body, 3.2);
+    K.line(P('M0 -30 L0 -40'), 4.2);
+    K.line(P('M0 -30 L0 -40'), 2, '#7A4E2A');
+  },
+  peas(K) {
+    const ctx = K.ctx;
+    ctx.rotate(-0.3);
+    const pod = P('M-40 4 C-30 -16 30 -16 40 -4 C30 14 -30 18 -40 4 Z');
+    K.part(pod, '#6CC04A', { box: [-40, -16, 40, 16] });
+    K.part(P('M-34 2 C-24 -8 24 -8 34 -3 C24 6 -24 10 -34 2 Z'), '#B9E88E', { flat: true, lw: 2 });
+    for (const x of [-20, -7, 6, 19]) { K.part(C(x, -1, 6.5), '#7DD45A', { box: [x - 6, -7, x + 6, 6], lw: 2.2 }); shine(ctx, x - 2, -3, 1.8, 1.8, 0, 0.75); }
+    K.line(P('M40 -4 Q46 -10 44 -16'), 2.6, '#4C9A36');
+  },
+  lettuce(K) {
+    const ctx = K.ctx;
+    for (const [x, y, a, c] of [[-14, 2, -0.5, '#7CC35A'], [14, 2, 0.5, '#7CC35A'], [0, -4, 0, '#9ADB6E']]) {
+      ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+      const leaf = P('M0 34 C-26 24 -30 -2 -22 -18 C-18 -30 -8 -36 0 -36 C8 -36 18 -30 22 -18 C30 -2 26 24 0 34 Z');
+      K.part(leaf, c, { box: [-28, -36, 28, 34], lw: 2.8 });
+      K.line(P('M0 32 L0 -28 M0 6 L-14 -6 M0 6 L14 -6 M0 -10 L-10 -20 M0 -10 L10 -20'), 1.8, 'rgba(40,110,30,0.5)');
+      ctx.restore();
+    }
+    shine(ctx, -6, -18, 3, 8, 0.2, 0.55);
   },
 };
 
