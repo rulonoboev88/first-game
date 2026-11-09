@@ -1,0 +1,33 @@
+<!doctype html><meta charset="utf-8">
+<style>
+@font-face { font-family: Nunito; font-weight: 800; src: url(../../app/src/main/assets/www/fonts/nunito-latin-800-normal.woff2) format('woff2'); }
+body { margin: 0; background: #ccc; }
+</style>
+<body><canvas id="c"></canvas>
+<script type="module">
+import { drawBird, drawEgg } from '../../app/src/main/assets/www/js/art/birds.js';
+import { drawAnimal } from '../../app/src/main/assets/www/js/art/animals.js';
+await document.fonts.load('800 40px Nunito');
+const W = 1024, H = 500;
+const cv = document.getElementById('c'); cv.width = W; cv.height = H;
+const c = cv.getContext('2d');
+const INK = '#3D2614';
+// тёплое небо и мягкий луг
+const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#FFF6DA'); g.addColorStop(1, '#FFE3A8'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+c.fillStyle = 'rgba(255,255,255,0.55)';
+for (const [x, y, r] of [[120, 70, 34], [160, 62, 42], [205, 74, 30], [820, 60, 30], [860, 52, 40], [900, 64, 28]]) { c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+// зайчик и мишка выглядывают из-за холма
+drawAnimal(c, 'rabbit', 150, 312, 160, { body: false, paws: false, mood: 'yum' });
+drawAnimal(c, 'bear', 875, 308, 160, { body: false, paws: false, mood: 'yum' });
+c.fillStyle = '#B9E7A0'; c.beginPath(); c.moveTo(0, 360); c.quadraticCurveTo(W * 0.3, 320, W * 0.55, 350); c.quadraticCurveTo(W * 0.8, 380, W, 340); c.lineTo(W, H); c.lineTo(0, H); c.fill();
+c.lineWidth = 4; c.strokeStyle = 'rgba(61,38,20,0.25)'; c.stroke();
+// заголовок
+c.textAlign = 'center'; c.fillStyle = INK;
+c.font = '800 74px Nunito'; c.fillText('Toddler First Game', W / 2, 150);
+c.font = '800 34px Nunito'; c.fillStyle = '#E07B00'; c.fillText('baby touch games', W / 2, 200);
+// зверята на лугу
+drawEgg(c, 370, 445, 70, { crack: 0.6 });
+drawBird(c, 'chick', 470, 470, 150, { t: 0 });
+drawBird(c, 'duckling', 640, 468, 135, { t: 0, flip: true });
+window.__done = true;
+</script></body>
