@@ -1,5 +1,14 @@
 // Звуки паровозика: гудок (держится, пока палец на поезде), «чух», стук колёс, «пшшш», колокола, «бип-бип».
-import { tone, noise, chime, audioCtx, voiceOut, noiseBuffer, audioReady } from '../core/audio.js';
+import { tone, noise, chime, audioCtx, voiceOut, noiseBuffer, audioReady, loadSamples, playSample, playLoop, hasSample } from '../core/audio.js';
+
+// ---------- Настоящие записи (CC0, BigSoundBank): «чух» и гудки. Без них — синтез ниже. ----------
+const DIR = 'sounds/train';
+let manifest = null;
+export function preloadTrain() {
+  return fetch(`${DIR}/manifest.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+    .then((m) => { manifest = m; if (!m) return; return loadSamples(DIR, [...m.chuff, ...Object.keys(m.whistle)]); });
+}
+let lastChuff = -1, nextWhistle = Math.floor(Math.random() * 3);
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 
@@ -9,6 +18,18 @@ const rnd = (a, b) => a + Math.random() * (b - a);
  */
 export function whistle({ pan = 0, echo = false, gain = 1 } = {}) {
   if (!audioReady()) return { release() {} };
+  if (manifest && manifest.whistle) {
+    // три гудка по кругу: настоящий из проезда паровоза и два ручных паровозных свистка
+    const names = Object.keys(manifest.whistle);
+    const name = names[nextWhistle++ % names.length];
+    const w = manifest.whistle[name];
+    const v = playLoop(`${DIR}/${name}`, { loopStart: w.loopStart, loopEnd: w.loopEnd, gain: 0.42 * gain, pan, wet: echo ? 1.4 : 0.45 });
+    if (v) return v;
+  }
+  return synthWhistle({ pan, echo, gain });
+}
+
+function synthWhistle({ pan = 0, echo = false, gain = 1 } = {}) {
   const ctx = audioCtx();
   const t0 = ctx.currentTime + 0.01;
   const t1 = t0 + 0.3;
@@ -81,8 +102,22 @@ export function whistle({ pan = 0, echo = false, gain = 1 } = {}) {
 }
 
 /** «Чух» — выхлоп пара из трубы. */
-/** «Чух» — выхлоп пара (синтез; ждёт замены на настоящую запись паровоза). */
-export function chuff(pan = 0, gain = 1, echo = false) {
+/**
+ * «Чух» — выхлоп пара. Запись настоящего паровоза (случайный из 11, не повторяя подряд);
+ * beat — удар в такте из 4 на оборот колеса (первый громче), rate — на малом ходу ниже и протяжнее.
+ */
+export function chuff(pan = 0, gain = 1, echo = false, beat = 0, rate = 1) {
+  if (manifest && manifest.chuff.length) {
+    let i = Math.floor(Math.random() * manifest.chuff.length);
+    if (i === lastChuff) i = (i + 1) % manifest.chuff.length;
+    lastChuff = i;
+    const key = `${DIR}/${manifest.chuff[i]}`;
+    if (hasSample(key)) {
+      const acc = [1, 0.7, 0.85, 0.7][beat & 3];
+      playSample(key, { gain: 0.55 * gain * acc, rate: rate * (0.97 + Math.random() * 0.06), pan, wet: echo ? 1.3 : 0.25 });
+      return;
+    }
+  }
   noise({ dur: 0.17, gain: 0.075 * gain, type: 'lowpass', freq: 950, to: 280, attack: 0.004, pan, wet: echo ? 1.4 : 0.3 });
   noise({ dur: 0.07, gain: 0.02 * gain, type: 'highpass', freq: 3200, attack: 0.003, pan, wet: 0.2 });
 }

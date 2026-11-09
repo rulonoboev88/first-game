@@ -290,6 +290,41 @@ export function playSample(key, { rate = 1, gain = 0.6, pan = 0, at = 0, wet = 0
   };
 }
 
+/**
+ * Сэмпл с петлёй: играет с начала, внутри [loopStart, loopEnd] крутится, пока не вызовут release() —
+ * тогда петля снимается и звук доигрывает свой естественный конец (гудок «ту-тууу», пока палец держит паровоз).
+ */
+export function playLoop(key, { loopStart, loopEnd, gain = 0.6, pan = 0, wet = 0.4, rate = 1 } = {}) {
+  const buf = samples.get(key);
+  if (!buf || !canPlay()) return null;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.playbackRate.value = rate;
+  src.loop = true;
+  src.loopStart = loopStart;
+  src.loopEnd = loopEnd;
+  const g = ctx.createGain();
+  g.gain.value = gain;
+  src.connect(g);
+  g.connect(outNode(pan, wet));
+  src.start(ctx.currentTime + 0.005);
+  active++;
+  let done = false;
+  const stop = () => { if (!done) { done = true; active--; } };
+  src.onended = stop;
+  // страховка: держат слишком долго (10 с) — отпускаем сами
+  const guard = setTimeout(() => { src.loop = false; }, 10000);
+  return {
+    node: g,
+    release() { clearTimeout(guard); src.loop = false; },
+    stop(t = 0.08) {
+      clearTimeout(guard);
+      g.gain.setTargetAtTime(0.0001, ctx.currentTime, t / 3);
+      try { src.stop(ctx.currentTime + t + 0.05); } catch (_) {}
+    },
+  };
+}
+
 /** Голос без записи (синтез): рот шевелится по простой огибающей. */
 export function fakeVoice(dur = 0.6) {
   const t0 = ctx ? ctx.currentTime : 0;

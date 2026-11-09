@@ -16,7 +16,6 @@ Freesound.org — downloaded with the CC0 license filter
   - "goose honk" by jahjahjahjah (sound 805297)          -> farm/goose_1.ogg
   - "turkey gobble 4 96khz" by jarredgibb (sound 233126)  -> farm/turkey_1.ogg
 
-All other sounds in the game are synthesized in code (Web Audio).
 
 Animals (sounds/animals/) — BigSoundBank.com by Joseph Sardin, CC0 (public domain)
   - Cow moos #2 (ID 2382), Cow moos #3 (ID 2383)             -> cow_*.ogg
@@ -37,3 +36,11 @@ Forest animals (sounds/animals/) — CC0 (public domain)
   - "Grizzly Bear growl eating" by nivatius, Freesound sound 519599 (CC0, NPS recording) -> bear_2.ogg
   - "foxBark2.wav" by Setzilla, Freesound sound 173208 (CC0)                           -> fox_*.ogg
   - "Red_Squirrel_chatter.wav" by philberts, Freesound sound 111393 (CC0)              -> squirrel_*.ogg
+
+Train (sounds/train/) — BigSoundBank.com by Joseph Sardin, CC0 (public domain)
+  - Steam Locomotive, Passage (ID 3009)  -> chuff_*.ogg (single exhaust beats), whistle_1.ogg (real whistle)
+  - Train whistle, foley #7 (ID 3321)    -> whistle_2.ogg
+  - Train whistle, foley #2 (ID 3316)    -> whistle_3.ogg
+  Made with tools/sound/train_sounds.py (cut, high-pass, level-matched, loop points for held whistle).
+
+All other sounds in the game are synthesized in code (Web Audio).

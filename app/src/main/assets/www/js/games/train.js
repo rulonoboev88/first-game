@@ -106,6 +106,7 @@ export default class TrainGame {
     this.initLayers();
     preloadAnimals();
     preloadFarm();
+    S.preloadTrain();
   }
 
   // ---------- Геометрия ----------
@@ -462,11 +463,13 @@ export default class TrainGame {
     this.wasTunnel = tunnel;
     if (dd > 0) {
       this.chuffAcc += dd / A.LOCO.driveR;
-      if (this.chuffAcc > Math.PI) {
-        this.chuffAcc -= Math.PI;
+      // 4 «чух» на оборот ведущего колеса, как у настоящего паровоза (дым — на сильных долях)
+      if (this.chuffAcc > Math.PI / 2) {
+        this.chuffAcc -= Math.PI / 2;
         const k = 1 - this.v / VC;
-        S.chuff(this.pan(LOCO_X + 1), 0.6 + k * 1.2, tunnel);
-        this.emitPuff(1 + k * 0.8);
+        const beat = (this.chuffBeat = ((this.chuffBeat || 0) + 1) & 3);
+        S.chuff(this.pan(LOCO_X + 1), 0.6 + k * 0.9, tunnel, beat, 0.85 + 0.15 * (this.v / VC));
+        if (beat % 2 === 0) this.emitPuff(1 + k * 0.8);
       }
       for (const r of [1.05, 3.3]) {
         if (Math.floor((this.prevD + r) / JOINT) !== Math.floor((this.D + r) / JOINT)) {

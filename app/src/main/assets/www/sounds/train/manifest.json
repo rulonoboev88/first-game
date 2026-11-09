@@ -1,0 +1,32 @@
+{
+ "chuff": [
+  "chuff_1",
+  "chuff_2",
+  "chuff_3",
+  "chuff_4",
+  "chuff_5",
+  "chuff_6",
+  "chuff_7",
+  "chuff_8",
+  "chuff_9",
+  "chuff_10",
+  "chuff_11"
+ ],
+ "whistle": {
+  "whistle_1": {
+   "loopStart": 1.12633,
+   "loopEnd": 1.44658,
+   "f0": 1055.5
+  },
+  "whistle_2": {
+   "loopStart": 1.00925,
+   "loopEnd": 1.32912,
+   "f0": 787.7
+  },
+  "whistle_3": {
+   "loopStart": 0.91828,
+   "loopEnd": 1.23891,
+   "f0": 792.2
+  }
+ }
+}
