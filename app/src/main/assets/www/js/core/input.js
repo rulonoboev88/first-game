@@ -68,6 +68,15 @@ export class Input {
     this.h.onUp && this.h.onUp(p);
   }
 
+  /** Свернули приложение / позвонили: отпускаем все пальцы, чтобы ничего не «залипло» (струйка, гудок, рост капли). */
+  releaseAll() {
+    for (const p of [...this.pointers.values()]) {
+      this.pointers.delete(p.id);
+      p.duration = performance.now() - p.t0;
+      this.h.onUp && this.h.onUp(p);
+    }
+  }
+
   destroy() {
     const el = this.el;
     el.removeEventListener('pointerdown', this._down);

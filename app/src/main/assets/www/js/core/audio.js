@@ -67,8 +67,18 @@ function makeImpulse(seconds, decay) {
   return buf;
 }
 
-function canPlay() {
-  return ctx && ctx.state === 'running' && active < MAX_VOICES;
+// «Ладонь» на экране = 6–10 касаний в одно мгновение: не больше BURST новых звуков за BURST_MS,
+// иначе вместо игры получается каша. Отложенные звуки (мелодии с at) не считаются.
+const BURST = 14, BURST_MS = 110;
+const starts = [];
+function canPlay(at = 0) {
+  if (!ctx || ctx.state !== 'running' || active >= MAX_VOICES) return false;
+  if (at > 0.05) return true;
+  const now = performance.now();
+  while (starts.length && now - starts[0] > BURST_MS) starts.shift();
+  if (starts.length >= BURST) return false;
+  starts.push(now);
+  return true;
 }
 
 /** Выход голоса: панорама + отправка в реверберацию. */
@@ -111,7 +121,7 @@ export function tone({
   attack = 0.005, release = null, at = 0, pan = 0, wet = 1,
   curve = 'exp', vibrato = 0, vibratoRate = 6, filter = null, q = 1,
 } = {}) {
-  if (!canPlay()) return;
+  if (!canPlay(at)) return;
   const t0 = ctx.currentTime + at;
   const t1 = t0 + dur;
   const o = ctx.createOscillator();
@@ -158,7 +168,7 @@ export function noise({
   dur = 0.1, gain = 0.2, type = 'bandpass', freq = 1500, to = null, q = 1,
   attack = 0.002, at = 0, pan = 0, wet = 0.5,
 } = {}) {
-  if (!canPlay()) return;
+  if (!canPlay(at)) return;
   const t0 = ctx.currentTime + at;
   const t1 = t0 + dur;
   const src = ctx.createBufferSource();
@@ -229,7 +239,7 @@ export function hasSample(key) {
 /** Проигрывает сэмпл. rate — скорость (выше = тоньше голос). Возвращает false, если не загружен. */
 export function playSample(key, { rate = 1, gain = 0.6, pan = 0, at = 0, wet = 0.4, meter = false } = {}) {
   const buf = samples.get(key);
-  if (!buf || !canPlay()) return false;
+  if (!buf || !canPlay(at)) return false;
   const src = ctx.createBufferSource();
   src.buffer = buf;
   src.playbackRate.value = rate;

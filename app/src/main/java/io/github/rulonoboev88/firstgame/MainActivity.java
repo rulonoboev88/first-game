@@ -4,6 +4,8 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.Intent;
+import android.media.AudioManager;
 import android.content.pm.ApplicationInfo;
 import android.graphics.Color;
 import android.net.Uri;
@@ -12,6 +14,7 @@ import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
@@ -43,6 +46,9 @@ public class MainActivity extends Activity {
 
     private WebView webView;
     private Vibrator vibrator;
+    private AudioManager audio;
+    /** Кнопки громкости не работают в игре (громкость — в настройках для родителей). */
+    private volatile boolean volumeLocked = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,6 +69,9 @@ public class MainActivity extends Activity {
         } else {
             vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         }
+
+        audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
         createWebView();
         hideSystemBars();
@@ -123,6 +132,16 @@ public class MainActivity extends Activity {
     public void onBackPressed() {
         // Для Android 12 и старше: тоже не выходим.
         notifyBack();
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        int k = event.getKeyCode();
+        if (volumeLocked && (k == KeyEvent.KEYCODE_VOLUME_UP || k == KeyEvent.KEYCODE_VOLUME_DOWN
+                || k == KeyEvent.KEYCODE_VOLUME_MUTE)) {
+            return true; // малыш жмёт кнопки на боку — ничего не происходит
+        }
+        return super.dispatchKeyEvent(event);
     }
 
     @SuppressWarnings("deprecation")
@@ -231,6 +250,47 @@ public class MainActivity extends Activity {
                 } catch (Exception ignored) {
                 }
                 finishAndRemoveTask();
+            });
+        }
+
+        @JavascriptInterface
+        public void setVolumeLock(boolean on) {
+            volumeLocked = on;
+        }
+
+        /** Громкость медиа 0…1 (системная, та же, что у кнопок). */
+        @JavascriptInterface
+        public float getVolume() {
+            if (audio == null) return -1;
+            int max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+            return max > 0 ? (float) audio.getStreamVolume(AudioManager.STREAM_MUSIC) / max : -1;
+        }
+
+        @JavascriptInterface
+        public void setVolume(float v) {
+            if (audio == null) return;
+            int max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+            int idx = Math.round(Math.max(0f, Math.min(1f, v)) * max);
+            try {
+                audio.setStreamVolume(AudioManager.STREAM_MUSIC, idx, 0);
+            } catch (Exception ignored) {
+            }
+        }
+
+        /** Системное «Поделиться» (почта, мессенджер) — отчёт об ошибках уходит только руками родителя. */
+        @JavascriptInterface
+        public void share(String subject, String text) {
+            runOnUiThread(() -> {
+                try {
+                    // пока игра закреплена, другие приложения не откроются — снимаем; вернёмся — JS закрепит снова
+                    if (isPinned()) stopLockTask();
+                    Intent i = new Intent(Intent.ACTION_SEND);
+                    i.setType("text/plain");
+                    i.putExtra(Intent.EXTRA_SUBJECT, subject);
+                    i.putExtra(Intent.EXTRA_TEXT, text);
+                    startActivity(Intent.createChooser(i, subject));
+                } catch (Exception ignored) {
+                }
             });
         }
 

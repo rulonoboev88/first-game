@@ -1,6 +1,7 @@
 // Экран «Для родителей»: какие игры видны и в каком порядке, «Сюрприз», язык, время игры,
 // сколько держать кнопки в игре, защита от выхода (закрепление приложения), «О приложении».
 import { prefs, setPref, orderedGames, MENU_HOLD } from './core/prefs.js';
+import { errors, clearErrors } from './core/errlog.js';
 
 export const STR = {
   ru: {
@@ -19,6 +20,10 @@ export const STR = {
     about: 'О приложении', version: 'Версия', source: 'Исходный код открыт',
     privacy: 'Бесплатно и без рекламы. У игры нет доступа в интернет: она ничего не собирает и никуда не отправляет. Настройки хранятся только на этом устройстве.',
     credits: 'Голоса зверей — записи в общественном достоянии (CC0): BigSoundBank (Joseph Sardin), Freesound (digpro120, jahjahjahjah, jarredgibb, qubodup, calebmills99, nivatius, Setzilla, philberts), U.S. Fish & Wildlife Service. Остальные звуки синтезированы в коде.',
+    sound: 'Звук', volume: 'Громкость', volLock: 'Кнопки громкости не работают в игре',
+    volHint: 'Малыш не сможет случайно выключить звук или сделать его слишком громким. Громкость меняется только здесь.',
+    errs: 'Отчёт об ошибках', errNone: 'Ошибок не было.', errCount: 'Записано ошибок:', errSend: 'Отправить отчёт', errClear: 'Очистить',
+    errHint: 'Ошибки записываются только на этом телефоне. Отчёт уходит, только если вы сами отправите его (почта, мессенджер).',
     rest: 'Пора отдохнуть', restHint: 'держите луну',
   },
   uk: {
@@ -37,6 +42,10 @@ export const STR = {
     about: 'Про застосунок', version: 'Версія', source: 'Відкритий вихідний код',
     privacy: 'Безкоштовно і без реклами. Гра не має доступу до інтернету: нічого не збирає і нікуди не надсилає. Налаштування зберігаються лише на цьому пристрої.',
     credits: 'Голоси звірят — записи в суспільному надбанні (CC0): BigSoundBank (Joseph Sardin), Freesound (digpro120, jahjahjahjah, jarredgibb, qubodup, calebmills99, nivatius, Setzilla, philberts), U.S. Fish & Wildlife Service. Інші звуки синтезовано в коді.',
+    sound: 'Звук', volume: 'Гучність', volLock: 'Кнопки гучності не працюють у грі',
+    volHint: 'Малюк не зможе випадково вимкнути звук або зробити його надто гучним. Гучність змінюється лише тут.',
+    errs: 'Звіт про помилки', errNone: 'Помилок не було.', errCount: 'Записано помилок:', errSend: 'Надіслати звіт', errClear: 'Очистити',
+    errHint: 'Помилки записуються лише на цьому телефоні. Звіт надсилається, тільки якщо ви самі його відправите (пошта, месенджер).',
     rest: 'Час відпочити', restHint: 'тримайте місяць',
   },
   en: {
@@ -55,6 +64,10 @@ export const STR = {
     about: 'About', version: 'Version', source: 'Open source',
     privacy: 'Free, no ads. The game has no internet access: it collects nothing and sends nothing. Settings are stored only on this device.',
     credits: 'Animal voices are public-domain recordings (CC0): BigSoundBank (Joseph Sardin), Freesound (digpro120, jahjahjahjah, jarredgibb, qubodup, calebmills99, nivatius, Setzilla, philberts), U.S. Fish & Wildlife Service. All other sounds are synthesized in code.',
+    sound: 'Sound', volume: 'Volume', volLock: 'Volume buttons do nothing in the game',
+    volHint: 'Your little one can’t mute the game or make it too loud by accident. Volume is changed only here.',
+    errs: 'Error report', errNone: 'No errors so far.', errCount: 'Errors recorded:', errSend: 'Send report', errClear: 'Clear',
+    errHint: 'Errors are recorded only on this phone. The report is sent only if you send it yourself (email, messenger).',
     rest: 'Time to rest', restHint: 'hold the moon',
   },
 };
@@ -160,6 +173,22 @@ export function buildSettings(ctx) {
   pinRow.append(el('span', 'row-name', S.pinOn), toggle(p.pin, (v) => { setPref('pin', v); ctx.onChange('pin'); }));
   right.appendChild(card(S.pin, pinRow, el('p', 'hint', S.pinHint), el('p', 'hint tip', S.pinTip), native ? null : el('p', 'hint warn', S.pinNo)));
 
+  // --- Звук: громкость телефона и блокировка кнопок громкости ---
+  const N = window.FGNative;
+  if (N && N.getVolume) {
+    const vrow = el('div', 'row plain vol');
+    const range = el('input', 'range');
+    range.type = 'range'; range.min = 0; range.max = 100; range.step = 1;
+    range.value = Math.round(Math.max(0, N.getVolume()) * 100);
+    const paint = () => range.style.setProperty('--v', range.value + '%');
+    paint();
+    range.addEventListener('input', () => { paint(); try { N.setVolume(range.value / 100); } catch (_) {} });
+    vrow.append(el('span', 'row-name', S.volume), range);
+    const lrow = el('div', 'row plain');
+    lrow.append(el('span', 'row-name', S.volLock), toggle(p.volLock, (v) => { setPref('volLock', v); ctx.onChange('volLock'); }));
+    right.appendChild(card(S.sound, vrow, lrow, el('p', 'hint', S.volHint)));
+  }
+
   // --- Кнопки в игре ---
   right.appendChild(card(S.hold,
     chips([[1, '1 ' + S.sec], [1.5, '1,5 ' + S.sec], [2, '2 ' + S.sec], [3, '3 ' + S.sec]], p.gameHold, (v) => { setPref('gameHold', v); ctx.onChange('gameHold'); }),
@@ -168,6 +197,33 @@ export function buildSettings(ctx) {
   // --- Язык ---
   right.appendChild(card(S.lang,
     chips([['auto', S.auto], ['uk', 'Українська'], ['ru', 'Русский'], ['en', 'English']], p.lang, (v) => { setPref('lang', v); ctx.onChange('lang'); })));
+
+  // --- Отчёт об ошибках (только по кнопке родителя) ---
+  const errBox = el('div', 'errs');
+  const fillErr = () => {
+    errBox.innerHTML = '';
+    const list = errors();
+    const total = list.reduce((a, e) => a + e.n, 0);
+    errBox.appendChild(el('p', null, list.length ? `${S.errCount} <b>${total}</b>` : S.errNone));
+    if (!list.length) return;
+    const btns = el('div', 'chips');
+    if (window.FGNative && window.FGNative.share) {
+      const send = el('button', 'chip on', S.errSend);
+      send.addEventListener('click', () => {
+        const head = `First Game ${window.FG_VERSION || '?'} · ${navigator.userAgent}\n${new Date().toISOString()}\n`;
+        const body = list.map((e) => `[${e.ctx}${e.where ? ' / ' + e.where : ''}] ×${e.n}  ${e.first} … ${e.last}  v${e.v}\n${e.msg}\n${e.stack}`).join('\n\n');
+        window.__repin = !!prefs().pin;
+        window.FGNative.share('First Game — ' + S.errs, head + '\n' + body);
+      });
+      btns.appendChild(send);
+    }
+    const clr = el('button', 'chip', S.errClear);
+    clr.addEventListener('click', () => { clearErrors(); fillErr(); });
+    btns.appendChild(clr);
+    errBox.appendChild(btns);
+  };
+  fillErr();
+  right.appendChild(card(S.errs, errBox, el('p', 'hint', S.errHint)));
 
   // --- О приложении ---
   const ab = el('div', 'about');

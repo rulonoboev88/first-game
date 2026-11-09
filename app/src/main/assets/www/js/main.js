@@ -9,6 +9,7 @@ import { haptic } from './core/haptics.js';
 import { prefs, orderedGames, detectLang, MENU_HOLD } from './core/prefs.js';
 import { buildSettings, STR } from './settings.js';
 import { RestScene } from './rest.js';
+import { safe, logError, setErrorContext } from './core/errlog.js';
 
 let LANG = detectLang();
 document.documentElement.lang = LANG;
@@ -115,9 +116,13 @@ async function openGame(g) {
   if (current || resting || !g || !g.load) return;
   haptic(1);
   chime(pentaFreq(7), { gain: 0.12, dur: 0.6 });
-  const mod = await g.load();
-  const Game = mod.default;
-  if (Game.prepare) await Game.prepare(); // например, загрузить физический движок
+  let Game;
+  try {
+    const mod = await g.load();
+    Game = mod.default;
+    if (Game.prepare) await Game.prepare(); // например, загрузить физический движок
+  } catch (e) { logError(e, 'load ' + g.id); return; }
+  setErrorContext(g.id);
 
   menuEl.classList.add('hidden');
   gameEl.classList.remove('hidden');
@@ -125,23 +130,37 @@ async function openGame(g) {
   eraseEl.classList.toggle('hidden', !Game.erasable);
 
   const stage = new Stage(stageEl, { webgl: !!Game.webgl, maxDpr: Game.maxDpr || 3 });
-  const game = new Game(stage);
-  stage.onResize = (prev, next) => game.resize && game.resize(prev, next);
+  let game;
+  try { game = new Game(stage); } catch (e) {
+    // игра не смогла стартовать (например, нет WebGL2) — тихо возвращаемся в меню
+    logError(e, 'create');
+    stage.destroy(); setErrorContext('menu');
+    gameEl.classList.add('hidden'); menuEl.classList.remove('hidden');
+    return;
+  }
+  // любая ошибка внутри игры записывается в журнал, но не останавливает её
+  stage.onResize = (prev, next) => game.resize && safe('resize', () => game.resize(prev, next));
   const input = new Input(stage.canvas, {
-    onDown: (p) => game.onDown && game.onDown(p),
-    onMove: (p) => game.onMove && game.onMove(p),
-    onUp: (p) => game.onUp && game.onUp(p),
+    onDown: (p) => game.onDown && safe('onDown', () => game.onDown(p)),
+    onMove: (p) => game.onMove && safe('onMove', () => game.onMove(p)),
+    onUp: (p) => game.onUp && safe('onUp', () => game.onUp(p)),
   });
 
-  current = { game, stage, input, raf: 0, last: performance.now() };
+  current = { game, stage, input, raf: 0, last: performance.now(), frames: 0 };
   window.__game = game; // для отладки
   const frame = (t) => {
     if (!current) return;
     const dt = Math.min(0.05, (t - current.last) / 1000);
     current.last = t;
-    game.update && game.update(dt, t / 1000);
-    game.draw(stage.ctx);
     current.raf = requestAnimationFrame(frame);
+    if (game.update) safe('update', () => game.update(dt, t / 1000));
+    try { game.draw(stage.ctx); } catch (e) {
+      logError(e, 'draw');
+      // сломанный кадр мог оставить незакрытый save()/clip — начинаем следующий с чистого листа
+      const c = stage.ctx;
+      if (c) { if (c.reset) c.reset(); c.setTransform(stage.dpr, 0, 0, stage.dpr, 0, 0); }
+    }
+    current.frames++;
   };
   current.raf = requestAnimationFrame(frame);
 }
@@ -150,9 +169,11 @@ function closeGame() {
   if (!current) return;
   cancelAnimationFrame(current.raf);
   current.input.destroy();
-  current.game.destroy && current.game.destroy();
+  if (current.game.destroy) safe('destroy', () => current.game.destroy());
   current.stage.destroy();
   current = null;
+  window.__game = null;
+  setErrorContext('menu');
   homeBtn.reset();
   eraseBtn.reset();
   gameEl.classList.add('hidden');
@@ -176,6 +197,7 @@ function openSettings() {
     onChange: (key) => {
       if (key === 'gameHold') { homeBtn.setDuration(prefs().gameHold * 1000); eraseBtn.setDuration(prefs().gameHold * 1000); }
       if (key === 'pin') applyPin();
+      if (key === 'volLock') applyVolumeLock();
       if (key === 'timer') playSec = 0;
       if (key === 'lang') { LANG = detectLang(); document.documentElement.lang = LANG; openSettings(); }
     },
@@ -189,6 +211,11 @@ function closeSettings() {
   settingsEl.classList.add('hidden');
   menuEl.classList.remove('hidden');
   buildMenu();
+}
+
+function applyVolumeLock() {
+  const n = native();
+  if (n && n.setVolumeLock) { try { n.setVolumeLock(!!prefs().volLock); } catch (_) {} }
 }
 
 function applyPin() {
@@ -242,14 +269,27 @@ function endRest() {
   layoutMenu();
 }
 window.__rest = startRest; // для отладки
+window.__app = { closeGame, frames: () => (current ? current.frames : -1) }; // для автотестов
 
 // ---------- Сигналы от Android-оболочки ----------
 
 window.FG_onBack = () => { /* «Назад» намеренно ничего не делает — защита от тодлера */ };
-window.FG_onPause = () => suspendAudio();
-window.FG_onResume = () => {};
-document.addEventListener('visibilitychange', () => { if (document.hidden) suspendAudio(); });
+function onHidden() {
+  suspendAudio();
+  if (current) current.input.releaseAll();
+}
+function onShown() {
+  unlockAudio();                      // звук возвращается сам, без лишнего касания
+  // после «Поделиться» закрепление снималось — возвращаем (только тогда, чтобы не спрашивать Android по кругу)
+  if (window.__repin) { window.__repin = false; applyPin(); }
+  if (current) current.last = performance.now();
+}
+window.FG_onPause = onHidden;
+window.FG_onResume = onShown;
+document.addEventListener('visibilitychange', () => (document.hidden ? onHidden() : onShown()));
+window.addEventListener('blur', () => { if (current) current.input.releaseAll(); });
 
 document.fonts && document.fonts.ready.then(buildMenu);
 if (!document.fonts) buildMenu();
 applyPin();
+applyVolumeLock();
