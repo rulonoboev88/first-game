@@ -138,6 +138,7 @@ void main() {
 };
 
 export default class EbruGame {
+  static volume = 1.6;       // выравнивание громкости между играми (tools/audit.js)
   static erasable = true;
   static background = BG;
   static webgl = true;

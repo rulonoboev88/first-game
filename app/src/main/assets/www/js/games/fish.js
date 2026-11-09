@@ -13,6 +13,7 @@ const MAX_FISH = 70;
 const MAX_BOTTOM = 24;
 
 export default class FishGame {
+  static volume = 0.9;       // выравнивание громкости между играми (tools/audit.js)
   static erasable = true;
   static background = '#CDEFFF';
 

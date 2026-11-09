@@ -10,7 +10,7 @@ import { haptic } from '../core/haptics.js';
 import { mouthFrom } from '../core/lipsync.js';
 import { animalVoice, preloadAnimals, whoosh, boing } from '../sounds/animals.js';
 import { cluck, crow, quack, honk, preloadFarm } from '../sounds/farm.js';
-import { crunch, munch, gulp, yuck, plate, pick, plop, hearts } from '../sounds/feed.js';
+import { crunch, munch, gulp, yuck, plate, pick, plop, hearts, tapEmpty } from '../sounds/feed.js';
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -166,7 +166,13 @@ export default class FeedGame {
       a.hop = 0.001;
       a.ear = 1;
       haptic(1);
+      return;
     }
+    // пустое место: мягкий звук, кружок на месте касания, зверь смотрит на палец — ни одно касание не остаётся без ответа
+    tapEmpty(this.pan(p.x), p.y > this.tableTop);
+    this.parts.push({ ring: true, x: p.x, y: p.y, vx: 0, vy: 0, r: this.S * 0.12, t: 0, life: 0.45 });
+    if (a.state === 'idle') { a.lookAt = clamp((p.x - this.ax) / (this.S * 1.1), -1, 1); a.lookT = 1.2; a.ear = 1; }
+    haptic(0);
   }
 
   onMove(p) {
@@ -272,7 +278,7 @@ export default class FeedGame {
     for (const q of this.parts) {
       q.t += dt;
       q.x += q.vx * dt; q.y += q.vy * dt;
-      if (q.heart) { q.vy -= 10 * dt; q.vx *= 0.98; } else q.vy += this.S * 6 * dt;
+      if (q.heart) { q.vy -= 10 * dt; q.vx *= 0.98; } else if (!q.ring) q.vy += this.S * 6 * dt;
     }
     this.parts = this.parts.filter((q) => q.t < q.life);
   }
@@ -525,6 +531,16 @@ export default class FeedGame {
     for (const q of this.parts) {
       if (q.t < 0) continue;
       const al = clamp(1 - q.t / q.life, 0, 1);
+      if (q.ring) {
+        // расходящийся кружок от пальца
+        const k = q.t / q.life;
+        ctx.globalAlpha = (1 - k) * 0.5;
+        ctx.lineWidth = Math.max(2, this.S * 0.025) * (1 - k * 0.6);
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.beginPath(); ctx.arc(q.x, q.y, q.r * (0.3 + k), 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = 1;
+        continue;
+      }
       if (q.heart) {
         ctx.save();
         ctx.globalAlpha = Math.min(1, al * 2);

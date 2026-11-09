@@ -42,7 +42,7 @@ setInterval(() => {
   const d = new Float32Array(m.fftSize); m.getFloatTimeDomainData(d);
   let s = 0, p = 0; for (const v of d) { s += v * v; p = Math.max(p, Math.abs(v)); }
   const rms = Math.sqrt(s / d.length);
-  if (rms > 0.001) { L.sum += rms * rms; L.n++; }
+  if (rms > 0.001) { L.sum += rms * rms; L.n++; }   // уровень, пока звук есть (тишина не считается)
   L.peak = Math.max(L.peak, p);
 }, 25);
 window.__fire = (type, id, x, y) => {

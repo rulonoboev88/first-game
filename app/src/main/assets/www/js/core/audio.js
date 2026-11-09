@@ -3,7 +3,7 @@
 // плюс немного мягкой «комнаты» (реверберации) для теплоты.
 
 let ctx = null;
-let master, comp, reverbSend, reverb;
+let master, comp, post, reverbSend, reverb;
 let active = 0;
 const MAX_VOICES = 28;
 let noiseBuf = null;
@@ -28,7 +28,11 @@ export function initAudio() {
   master = ctx.createGain();
   master.gain.value = 0.8;
   master.connect(comp);
-  comp.connect(ctx.destination);
+  // громкость игры — ПОСЛЕ компрессора, чтобы выравнивание между играми работало честно (компрессор его не «съедает»)
+  post = ctx.createGain();
+  post.gain.value = gameVol;
+  comp.connect(post);
+  post.connect(ctx.destination);
 
   reverb = ctx.createConvolver();
   reverb.buffer = makeImpulse(1.1, 2.8);
@@ -42,6 +46,13 @@ export function initAudio() {
   for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
 
   return ctx;
+}
+
+/** Громкость текущей игры относительно общей (выравнивание игр между собой; см. static volume у игр). */
+let gameVol = 1;
+export function setGameVolume(k = 1) {
+  gameVol = k;
+  if (post) post.gain.setTargetAtTime(k, ctx.currentTime, 0.05);
 }
 
 /** Вызывать на каждое касание: браузер разрешает звук только после жеста. */
@@ -86,7 +97,7 @@ const STATS = { starts: 0 };
 window.__audioStats = STATS;
 export function meterNode() {
   if (!ctx) return null;
-  if (!STATS.meter) { STATS.meter = ctx.createAnalyser(); STATS.meter.fftSize = 2048; comp.connect(STATS.meter); }
+  if (!STATS.meter) { STATS.meter = ctx.createAnalyser(); STATS.meter.fftSize = 2048; post.connect(STATS.meter); }
   return STATS.meter;
 }
 window.__audioMeter = meterNode;

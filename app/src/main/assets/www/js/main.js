@@ -4,7 +4,7 @@ import { ICONS } from './art/icons.js';
 import { Stage } from './core/stage.js';
 import { Input } from './core/input.js';
 import { HoldButton } from './core/holdButton.js';
-import { unlockAudio, suspendAudio, chime, pentaFreq } from './core/audio.js';
+import { unlockAudio, suspendAudio, chime, pentaFreq, setGameVolume } from './core/audio.js';
 import { haptic } from './core/haptics.js';
 import { prefs, orderedGames, detectLang, MENU_HOLD } from './core/prefs.js';
 import { buildSettings, STR } from './settings.js';
@@ -146,6 +146,7 @@ async function openGame(g) {
     if (Game.prepare) await Game.prepare(); // например, загрузить физический движок
   } catch (e) { logError(e, 'load ' + g.id); return; }
   setErrorContext(g.id);
+  setGameVolume(Game.volume || 1);
 
   menuEl.classList.add('hidden');
   gameEl.classList.remove('hidden');
@@ -224,6 +225,7 @@ function closeGame() {
   current = null;
   window.__game = null;
   setErrorContext('menu');
+  setGameVolume(1);
   homeBtn.reset();
   eraseBtn.reset();
   gameEl.classList.add('hidden');

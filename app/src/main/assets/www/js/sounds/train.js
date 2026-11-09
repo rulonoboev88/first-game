@@ -81,6 +81,7 @@ export function whistle({ pan = 0, echo = false, gain = 1 } = {}) {
 }
 
 /** «Чух» — выхлоп пара из трубы. */
+/** «Чух» — выхлоп пара (синтез; ждёт замены на настоящую запись паровоза). */
 export function chuff(pan = 0, gain = 1, echo = false) {
   noise({ dur: 0.17, gain: 0.075 * gain, type: 'lowpass', freq: 950, to: 280, attack: 0.004, pan, wet: echo ? 1.4 : 0.3 });
   noise({ dur: 0.07, gain: 0.02 * gain, type: 'highpass', freq: 3200, attack: 0.003, pan, wet: 0.2 });
@@ -93,6 +94,19 @@ export function clackPair(pan = 0, gain = 1, gap = 0.12, hollow = false, echo = 
     tone({ freq: hollow ? 105 : 170, to: hollow ? 66 : 110, dur: hollow ? 0.14 : 0.08, type: 'sine', gain: (hollow ? 0.2 : 0.14) * gain, attack: 0.002, at, pan, wet: hollow || echo ? 1 : 0.2 });
     if (hollow) tone({ freq: 310, to: 300, dur: 0.3, type: 'triangle', gain: 0.025 * gain, attack: 0.003, at, pan, wet: 1.2 });
   }
+}
+
+/** Короткое тихое «ту!» — паровозик отзывается на касание мимо всего. */
+export function peep(pan = 0) {
+  for (const [f, g] of [[523, 0.05], [659, 0.04], [784, 0.03]]) {
+    tone({ freq: f, to: f * 1.01, dur: 0.16, type: 'triangle', gain: g, attack: 0.012, pan, wet: 0.7, filter: { type: 'lowpass', freq: 2400, q: 0.7 } });
+  }
+  noise({ dur: 0.12, gain: 0.015, type: 'bandpass', freq: 2200, q: 1, pan, wet: 0.4 });
+}
+
+/** Тихий шорох начинающегося дождика. */
+export function rainStart(pan = 0) {
+  noise({ dur: 1.2, gain: 0.04, type: 'highpass', freq: 3500, to: 2500, attack: 0.25, pan, wet: 0.6 });
 }
 
 /** «Пшшш» — пар при торможении. */

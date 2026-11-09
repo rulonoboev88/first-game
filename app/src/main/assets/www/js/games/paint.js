@@ -107,6 +107,7 @@ void main() {
 }`;
 
 export default class PaintGame {
+  static volume = 0.9;       // выравнивание громкости между играми (tools/audit.js)
   static erasable = true;
   static background = '#FFFFFF';
   static webgl = true;

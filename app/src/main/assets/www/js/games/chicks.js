@@ -15,6 +15,7 @@ const GRAIN_COLORS = ['#E0A458', '#D4A24C', '#C98E3E', '#F0C27B', '#B8863B'];
 const SPEED = { chick: [0.9, 2.4], gold: [1.0, 2.1], duckling: [0.8, 2.1], gosling: [0.75, 1.8], hen: [0.6, 1.3], rooster: [0.6, 1.2], turkey: [0.5, 1.0] };
 
 export default class ChicksGame {
+  static volume = 0.9;       // выравнивание громкости между играми (tools/audit.js)
   static erasable = false;
   static background = '#FFFFFF';
 

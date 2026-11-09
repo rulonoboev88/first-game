@@ -13,6 +13,7 @@ const TYPES = ['bush', 'hay', 'house'];
 const easeOutBack = (t) => { const c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
 
 export default class HideGame {
+  static volume = 0.85;       // выравнивание громкости между играми (tools/audit.js)
   static erasable = false;
   static background = '#FFFFFF';
 
@@ -65,6 +66,18 @@ export default class HideGame {
         this.reveal(s);
         return;
       }
+    }
+    // мимо укрытий: ближайший спрятавшийся зверёк шуршит и чуть выглядывает — подсказывает, где искать
+    let best = null, bd = Infinity;
+    for (const s of this.spots) {
+      if (s.state !== 'hidden') continue;
+      const d = Math.hypot(p.x - s.x, p.y - s.y);
+      if (d < bd) { bd = d; best = s; }
+    }
+    if (best) {
+      best.tease = 0.9;
+      noise({ dur: 0.35, gain: 0.06, type: 'bandpass', freq: 2500, q: 0.8, pan: panFor(best.x, this.stage.w), wet: 0.3 });
+      haptic(0);
     }
   }
   onMove() {}

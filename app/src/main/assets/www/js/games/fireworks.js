@@ -55,6 +55,7 @@ function sample(poly, n) {
 }
 
 export default class FireworksGame {
+  static volume = 0.7;       // выравнивание громкости между играми (tools/audit.js)
   static erasable = false;
   static background = '#0B1640';
 

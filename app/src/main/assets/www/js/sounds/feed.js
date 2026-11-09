@@ -53,3 +53,13 @@ export function hearts(pan = 0) {
     tone({ freq: f, dur: 0.25, type: 'sine', gain: 0.045, attack: 0.004, release: 0.22, at, pan, wet: 1.2 });
   }
 }
+
+/** Тап по пустому месту: на столе — деревянное «тук», выше — мягкое «буп». */
+export function tapEmpty(pan = 0, table = true) {
+  if (table) {
+    tone({ freq: rnd(190, 220), to: 150, dur: 0.07, type: 'sine', gain: 0.09, attack: 0.002, pan, wet: 0.3 });
+    noise({ dur: 0.03, gain: 0.03, type: 'bandpass', freq: 1800, q: 2, pan, wet: 0.2 });
+  } else {
+    tone({ freq: rnd(480, 540), to: rnd(640, 700), dur: 0.09, type: 'sine', gain: 0.05, attack: 0.004, pan, wet: 0.6 });
+  }
+}

@@ -27,6 +27,7 @@ const COVERS = ['bush', 'log', 'fence', 'hay', 'stump', 'rock'];
 const HIDDEN = 1.0; // насколько зверь спрятан (в долях размера головы)
 
 export default class FlashlightGame {
+  static volume = 2.0;       // выравнивание громкости между играми (tools/audit.js)
   static erasable = false;
   static background = '#0B1236';
   static maxDpr = 2;

@@ -81,6 +81,7 @@ export function drawRubberDuck(ctx, c, acc) {
 }
 
 export default class DucksGame {
+  static volume = 1.25;       // выравнивание громкости между играми (tools/audit.js)
   static erasable = false;
   static background = '#9FDFF5';
 

@@ -68,6 +68,7 @@ function mixHex(a, b, t) {
 }
 
 export default class TrainGame {
+  static volume = 1.25;       // выравнивание громкости между играми (tools/audit.js)
   static erasable = false;
   static background = '#BFE6FA';
   static maxDpr = 2.5;
@@ -309,9 +310,13 @@ export default class TrainGame {
     for (const cl of this.clouds) {
       const c = this.cloudPos(cl);
       if (Math.abs(p.x - c.x) < c.rx * 1.1 && Math.abs(p.y - c.y) < c.ry * 1.4) {
-        cl.rain = 4.5; haptic(0); return;
+        cl.rain = 4.5; S.rainStart(this.pan((c.x - this.left) / this.c)); haptic(0); return;
       }
     }
+    // мимо всего — паровозик тихо отзывается «ту!» и пускает маленький клубок пара
+    S.peep(this.pan(LOCO_X + 1));
+    this.emitPuff(0.7);
+    haptic(0);
   }
   startWhistle(p, big) {
     const old = this.whistles.get(p.id);
