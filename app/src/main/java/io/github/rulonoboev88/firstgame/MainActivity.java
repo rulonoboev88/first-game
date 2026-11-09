@@ -2,6 +2,7 @@ package io.github.rulonoboev88.firstgame;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.graphics.Color;
@@ -180,6 +181,11 @@ public class MainActivity extends Activity {
         super.onDestroy();
     }
 
+    private boolean isPinned() {
+        ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        return am != null && am.getLockTaskModeState() != ActivityManager.LOCK_TASK_MODE_NONE;
+    }
+
     /** Методы, доступные из JS как window.FGNative.* */
     private class Bridge {
         /** Лёгкий тактильный отклик. strength: 0 — тик, 1 — клик, 2 — сильный клик. */
@@ -199,6 +205,33 @@ public class MainActivity extends Activity {
                 }
             } catch (Exception ignored) {
             }
+        }
+
+        /**
+         * Защита от выхода: закрепление приложения (screen pinning). Android сам спросит
+         * «Закрепить приложение?». Пока закреплено, не работают «домой», недавние, шторка и разделение экрана.
+         */
+        @JavascriptInterface
+        public void setPinned(boolean on) {
+            runOnUiThread(() -> {
+                try {
+                    if (on && !isPinned()) startLockTask();
+                    else if (!on && isPinned()) stopLockTask();
+                } catch (Exception ignored) {
+                }
+            });
+        }
+
+        /** Выход из игры (кнопка выключения в меню, держать 3 с): снять закрепление и закрыться. */
+        @JavascriptInterface
+        public void exit() {
+            runOnUiThread(() -> {
+                try {
+                    if (isPinned()) stopLockTask();
+                } catch (Exception ignored) {
+                }
+                finishAndRemoveTask();
+            });
         }
 
         @JavascriptInterface

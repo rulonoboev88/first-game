@@ -6,14 +6,13 @@ import { Input } from './core/input.js';
 import { HoldButton } from './core/holdButton.js';
 import { unlockAudio, suspendAudio, chime, pentaFreq } from './core/audio.js';
 import { haptic } from './core/haptics.js';
+import { prefs, orderedGames, detectLang, MENU_HOLD } from './core/prefs.js';
+import { buildSettings, STR } from './settings.js';
+import { RestScene } from './rest.js';
 
-const LANG = (() => {
-  const l = (navigator.language || 'en').toLowerCase();
-  if (l.startsWith('uk')) return 'uk';
-  if (l.startsWith('ru')) return 'ru';
-  return 'en';
-})();
+let LANG = detectLang();
 document.documentElement.lang = LANG;
+const native = () => window.FGNative || null;
 
 try { window.FG_VERSION = window.FGNative ? window.FGNative.version() : 'dev'; } catch (_) { window.FG_VERSION = '?'; }
 
@@ -22,6 +21,8 @@ const tilesEl = document.getElementById('tiles');
 const gameEl = document.getElementById('game');
 const stageEl = document.getElementById('stage');
 const eraseEl = document.getElementById('btn-erase');
+const settingsEl = document.getElementById('settings');
+const restEl = document.getElementById('rest');
 
 // Звук разрешается только после первого касания — «будим» его на любом нажатии.
 window.addEventListener('pointerdown', unlockAudio, { capture: true });
@@ -56,14 +57,22 @@ function makeTile(id, label, bg, { soon = false, surprise = false, onTap }) {
   return b;
 }
 
+function visibleGames() {
+  const hidden = new Set(prefs().hidden);
+  return orderedGames(GAMES).filter((g) => !hidden.has(g.id));
+}
+
 function buildMenu() {
   tilesEl.innerHTML = '';
-  const ready = GAMES.filter((g) => g.ready);
-  tilesEl.appendChild(makeTile('surprise', SURPRISE_LABEL[LANG], null, {
-    surprise: true,
-    onTap: () => openGame(ready[Math.floor(Math.random() * ready.length)]),
-  }));
-  for (const g of GAMES) {
+  const shown = visibleGames();
+  const ready = shown.filter((g) => g.ready);
+  if (prefs().surprise && ready.length > 1) {
+    tilesEl.appendChild(makeTile('surprise', SURPRISE_LABEL[LANG], null, {
+      surprise: true,
+      onTap: () => openGame(ready[Math.floor(Math.random() * ready.length)]),
+    }));
+  }
+  for (const g of shown) {
     tilesEl.appendChild(makeTile(g.id, g.label[LANG], g.bg, {
       soon: !g.ready,
       onTap: () => openGame(g),
@@ -90,10 +99,10 @@ new ResizeObserver(() => { if (!menuEl.classList.contains('hidden')) layoutMenu(
 let current = null; // { game, stage, input, raf }
 
 const homeBtn = new HoldButton(document.getElementById('btn-home'), {
-  icon: 'home', duration: 1000, onDone: closeGame,
+  icon: 'home', duration: prefs().gameHold * 1000, onDone: closeGame,
 });
 const eraseBtn = new HoldButton(eraseEl, {
-  icon: 'erase', duration: 2000,
+  icon: 'erase', duration: prefs().gameHold * 1000,
   onDone: () => {
     if (current && current.game.erase) {
       current.game.erase();
@@ -103,7 +112,7 @@ const eraseBtn = new HoldButton(eraseEl, {
 });
 
 async function openGame(g) {
-  if (current || !g || !g.load) return;
+  if (current || resting || !g || !g.load) return;
   haptic(1);
   chime(pentaFreq(7), { gain: 0.12, dur: 0.6 });
   const mod = await g.load();
@@ -151,6 +160,89 @@ function closeGame() {
   layoutMenu();
 }
 
+// ---------- Для родителей: шестерёнка и выключение (держать 3 с) ----------
+
+new HoldButton(document.getElementById('btn-gear'), { icon: 'gear', duration: MENU_HOLD * 1000, onDone: openSettings });
+new HoldButton(document.getElementById('btn-power'), {
+  icon: 'power', duration: MENU_HOLD * 1000,
+  onDone: () => { haptic(2); const n = native(); if (n && n.exit) n.exit(); },
+});
+
+function openSettings() {
+  haptic(1);
+  buildSettings({
+    root: settingsEl, games: GAMES.filter((g) => g.ready), lang: LANG, drawIcon,
+    onClose: closeSettings,
+    onChange: (key) => {
+      if (key === 'gameHold') { homeBtn.setDuration(prefs().gameHold * 1000); eraseBtn.setDuration(prefs().gameHold * 1000); }
+      if (key === 'pin') applyPin();
+      if (key === 'timer') playSec = 0;
+      if (key === 'lang') { LANG = detectLang(); document.documentElement.lang = LANG; openSettings(); }
+    },
+  });
+  menuEl.classList.add('hidden');
+  settingsEl.classList.remove('hidden');
+  settingsEl.scrollTop = 0;
+}
+
+function closeSettings() {
+  settingsEl.classList.add('hidden');
+  menuEl.classList.remove('hidden');
+  buildMenu();
+}
+
+function applyPin() {
+  const n = native();
+  if (n && n.setPinned) { try { n.setPinned(!!prefs().pin); } catch (_) {} }
+}
+
+// ---------- Время игры ----------
+
+let playSec = 0;
+let resting = null;
+setInterval(() => {
+  const lim = prefs().timer;
+  if (!lim || resting || document.hidden || !settingsEl.classList.contains('hidden')) return;
+  playSec += 1;
+  if (playSec >= lim * 60) startRest();
+}, 1000);
+
+const moonBtn = new HoldButton(document.getElementById('btn-moon'), { icon: 'moon', duration: MENU_HOLD * 1000, onDone: endRest });
+
+function startRest() {
+  closeGame();
+  menuEl.classList.add('hidden');
+  restEl.classList.remove('hidden');
+  const S = STR[LANG] || STR.en;
+  document.getElementById('rest-title').textContent = S.rest;
+  document.getElementById('rest-hint').textContent = S.restHint;
+  const stage = new Stage(document.getElementById('rest-stage'), { maxDpr: 2 });
+  const scene = new RestScene(stage);
+  resting = { stage, scene, raf: 0, last: performance.now() };
+  const frame = (t) => {
+    if (!resting) return;
+    const dt = Math.min(0.05, (t - resting.last) / 1000);
+    resting.last = t;
+    scene.update(dt);
+    scene.draw(stage.ctx);
+    resting.raf = requestAnimationFrame(frame);
+  };
+  resting.raf = requestAnimationFrame(frame);
+}
+
+function endRest() {
+  if (!resting) return;
+  cancelAnimationFrame(resting.raf);
+  resting.stage.destroy();
+  resting = null;
+  moonBtn.reset();
+  playSec = 0;
+  restEl.classList.add('hidden');
+  menuEl.classList.remove('hidden');
+  layoutMenu();
+}
+window.__rest = startRest; // для отладки
+
 // ---------- Сигналы от Android-оболочки ----------
 
 window.FG_onBack = () => { /* «Назад» намеренно ничего не делает — защита от тодлера */ };
@@ -160,3 +252,4 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) suspe
 
 document.fonts && document.fonts.ready.then(buildMenu);
 if (!document.fonts) buildMenu();
+applyPin();

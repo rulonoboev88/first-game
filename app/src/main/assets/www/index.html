@@ -11,6 +11,10 @@
   <main id="menu" class="screen">
     <header class="menu-head">
       <h1 class="title">First Game</h1>
+      <div class="parent-btns">
+        <button id="btn-gear" class="hold-btn" aria-label="settings"></button>
+        <button id="btn-power" class="hold-btn" aria-label="exit"></button>
+      </div>
     </header>
     <section id="tiles" class="tiles"></section>
   </main>
@@ -20,6 +24,19 @@
     <div id="stage"></div>
     <button id="btn-home" class="hold-btn corner-tl" aria-label="menu"></button>
     <button id="btn-erase" class="hold-btn corner-tr hidden" aria-label="erase"></button>
+  </div>
+
+  <!-- Для родителей -->
+  <div id="settings" class="screen settings hidden"></div>
+
+  <!-- Время вышло: зверята засыпают -->
+  <div id="rest" class="screen hidden">
+    <div id="rest-stage"></div>
+    <div class="rest-ui">
+      <div id="rest-title" class="rest-title"></div>
+      <button id="btn-moon" class="hold-btn moon-btn" aria-label="continue"></button>
+      <div id="rest-hint" class="rest-hint"></div>
+    </div>
   </div>
 
   <script type="module" src="js/main.js"></script>
