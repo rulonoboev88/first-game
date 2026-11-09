@@ -186,8 +186,15 @@ export function buildSettings(ctx) {
 
   // --- О приложении ---
   const ab = el('div', 'about');
+  const ver = el('p', null, '');
+  const verText = () => { ver.innerHTML = `<b>First Game</b> · ${S.version} ${window.FG_VERSION || 'dev'}` + (prefs().fps ? ' · FPS' : ''); };
+  verText();
+  // секрет для замеров: удерживать строку версии 2 с — включить/выключить счётчик кадров в играх
+  let verTimer = 0;
+  ver.addEventListener('pointerdown', () => { verTimer = setTimeout(() => { setPref('fps', !prefs().fps); verText(); }, 2000); });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) ver.addEventListener(ev, () => clearTimeout(verTimer));
   ab.append(
-    el('p', null, `<b>First Game</b> · ${S.version} ${window.FG_VERSION || 'dev'}`),
+    ver,
     el('p', 'hint', S.privacy),
     el('p', 'hint', `${S.source}: <span class="mono">github.com/rulonoboev88/first-game</span>`),
     el('p', 'hint', S.credits),

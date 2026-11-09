@@ -78,8 +78,18 @@ function canPlay(at = 0) {
   while (starts.length && now - starts[0] > BURST_MS) starts.shift();
   if (starts.length >= BURST) return false;
   starts.push(now);
+  STATS.starts++;
   return true;
 }
+// Счётчики для автотестов (tools/audit.js): сколько звуков началось; при window.__meter — измеритель громкости на выходе.
+const STATS = { starts: 0 };
+window.__audioStats = STATS;
+export function meterNode() {
+  if (!ctx) return null;
+  if (!STATS.meter) { STATS.meter = ctx.createAnalyser(); STATS.meter.fftSize = 2048; comp.connect(STATS.meter); }
+  return STATS.meter;
+}
+window.__audioMeter = meterNode;
 
 /** Выход голоса: панорама + отправка в реверберацию. */
 function outNode(pan = 0, wet = 1) {
@@ -312,15 +322,17 @@ export function createVoice({ type = 'triangle', freq = 440, pan = 0, filterFreq
   let stopped = false;
   return {
     setFreq(v, glide = 0.06) {
+      if (!Number.isFinite(v)) return;
       const t = ctx.currentTime;
       o.frequency.setTargetAtTime(v, t, glide);
       o2.frequency.setTargetAtTime(v * 2, t, glide);
     },
     setGain(v, time = 0.05) {
+      if (!Number.isFinite(v)) return;
       g.gain.setTargetAtTime(Math.max(0.0001, v), ctx.currentTime, time);
     },
     setPan(v) {
-      if (out.pan) out.pan.setTargetAtTime(Math.max(-1, Math.min(1, v)), ctx.currentTime, 0.05);
+      if (out.pan && Number.isFinite(v)) out.pan.setTargetAtTime(Math.max(-1, Math.min(1, v)), ctx.currentTime, 0.05);
     },
     stop() {
       if (stopped) return;

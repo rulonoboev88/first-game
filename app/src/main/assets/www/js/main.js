@@ -17,6 +17,29 @@ const native = () => window.FGNative || null;
 
 try { window.FG_VERSION = window.FGNative ? window.FGNative.version() : 'dev'; } catch (_) { window.FG_VERSION = '?'; }
 
+const IDLE_MS = 15000;
+
+// Скрытый счётчик кадров для замеров на телефоне (включается в «О приложении»: удерживать строку версии 2 с).
+const fpsMeter = (() => {
+  const el = document.getElementById('fps');
+  let t0 = 0, n = 0, drawn = 0, worst = 0, prev = 0;
+  return {
+    reset() { t0 = 0; n = 0; drawn = 0; worst = 0; prev = 0; el.classList.toggle('hidden', !prefs().fps); },
+    tick(t) {
+      if (!prefs().fps) return;
+      if (prev) worst = Math.max(worst, t - prev);
+      prev = t; n++;
+      if (!t0) t0 = t;
+      if (t - t0 >= 1000) {
+        const fps = Math.round((drawn * 1000) / (t - t0));
+        el.textContent = (drawn ? `${fps} fps · max ${Math.round(worst)} ms` : 'картинка стоит') + (current && t - current.lastInput > IDLE_MS ? ' · покой' : '');
+        t0 = t; n = 0; drawn = 0; worst = 0;
+      }
+    },
+    drawn() { drawn++; },
+  };
+})();
+
 const menuEl = document.getElementById('menu');
 const tilesEl = document.getElementById('tiles');
 const gameEl = document.getElementById('game');
@@ -138,22 +161,48 @@ async function openGame(g) {
     gameEl.classList.add('hidden'); menuEl.classList.remove('hidden');
     return;
   }
-  // любая ошибка внутри игры записывается в журнал, но не останавливает её
-  stage.onResize = (prev, next) => game.resize && safe('resize', () => game.resize(prev, next));
+  // любая ошибка внутри игры записывается в журнал, но не останавливает её.
+  // Обработчики обращаются к current.game: после восстановления видеокарты игра может быть пересоздана.
+  const G = () => current && current.game;
+  stage.onResize = (prev, next) => G() && G().resize && safe('resize', () => G().resize(prev, next));
+  const touched = () => { if (current) { current.lastInput = performance.now(); current.redraw = 2; } };
   const input = new Input(stage.canvas, {
-    onDown: (p) => game.onDown && safe('onDown', () => game.onDown(p)),
-    onMove: (p) => game.onMove && safe('onMove', () => game.onMove(p)),
-    onUp: (p) => game.onUp && safe('onUp', () => game.onUp(p)),
+    onDown: (p) => { touched(); G() && G().onDown && safe('onDown', () => G().onDown(p)); },
+    onMove: (p) => { touched(); G() && G().onMove && safe('onMove', () => G().onMove(p)); },
+    onUp: (p) => { touched(); G() && G().onUp && safe('onUp', () => G().onUp(p)); },
   });
 
-  current = { game, stage, input, raf: 0, last: performance.now(), frames: 0 };
+  const now0 = performance.now();
+  current = { game, Game, stage, input, raf: 0, last: now0, lastInput: now0, frames: 0, tick: 0, redraw: 2 };
   window.__game = game; // для отладки
+
+  // Видеокарту у WebGL-игры может отобрать Android (свернули, сложили, нехватка памяти).
+  // Браузер вернёт её сам — тогда пересоздаём игру на том же холсте, чтобы не было чёрного экрана.
+  if (Game.webgl) {
+    stage.canvas.addEventListener('webglcontextlost', (e) => e.preventDefault());
+    stage.canvas.addEventListener('webglcontextrestored', () => {
+      if (!current || current.stage !== stage) return;
+      // старую игру НЕ уничтожаем через destroy(): он бы снова «потерял» только что возвращённую видеокарту
+      try { current.game = new Game(stage); window.__game = current.game; current.redraw = 2; }
+      catch (e) { logError(e, 'restore'); closeGame(); }
+    });
+  }
+
+  fpsMeter.reset();
   const frame = (t) => {
     if (!current) return;
+    current.raf = requestAnimationFrame(frame);
+    fpsMeter.tick(t);
+    // Покой: 15 с без касаний — 30 кадров в секунду вместо 60 (батарея, нагрев). Анимации идут, просто реже.
+    const idle = t - current.lastInput > IDLE_MS;
+    if (idle && (current.tick++ & 1)) return;
+    const game = current.game;
     const dt = Math.min(0.05, (t - current.last) / 1000);
     current.last = t;
-    current.raf = requestAnimationFrame(frame);
     if (game.update) safe('update', () => game.update(dt, t / 1000));
+    // Игра может сказать «картинка не изменилась» (still) — тогда кадр не перерисовываем вовсе.
+    if (game.still && current.redraw <= 0) return;
+    if (current.redraw > 0) current.redraw--;
     try { game.draw(stage.ctx); } catch (e) {
       logError(e, 'draw');
       // сломанный кадр мог оставить незакрытый save()/clip — начинаем следующий с чистого листа
@@ -161,6 +210,7 @@ async function openGame(g) {
       if (c) { if (c.reset) c.reset(); c.setTransform(stage.dpr, 0, 0, stage.dpr, 0, 0); }
     }
     current.frames++;
+    fpsMeter.drawn();
   };
   current.raf = requestAnimationFrame(frame);
 }
@@ -263,7 +313,7 @@ function endRest() {
   layoutMenu();
 }
 window.__rest = startRest; // для отладки
-window.__app = { closeGame, frames: () => (current ? current.frames : -1) }; // для автотестов
+window.__app = { closeGame, frames: () => (current ? current.frames : -1), current: () => current }; // для автотестов
 
 // ---------- Сигналы от Android-оболочки ----------
 
@@ -273,6 +323,7 @@ function onHidden() {
   if (current) current.input.releaseAll();
 }
 function onShown() {
+  if (current) current.redraw = 3;   // после возврата перерисовать, даже если игра «стоит»
   unlockAudio();                      // звук возвращается сам, без лишнего касания
   // после «Поделиться» закрепление снималось — возвращаем (только тогда, чтобы не спрашивать Android по кругу)
   if (window.__repin) { window.__repin = false; applyPin(); }

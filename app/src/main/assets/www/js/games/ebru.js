@@ -160,6 +160,9 @@ export default class EbruGame {
 
   get u() { return this.stage.unit; }
 
+  /** Ничего не изменилось с прошлого кадра — главный цикл не перерисовывает (экономия батареи). */
+  get still() { return !this.dirty; }
+
   /** Поле с полями-запасом вокруг экрана; k — текселей на css-пиксель. */
   build(prev = null) {
     const { w, h } = this.stage;
@@ -188,6 +191,7 @@ export default class EbruGame {
       this.g.clear(F, -1, FAR, 0, 1);
     }
     this.F = F; this.k = k; this.m = m; this.W = w; this.H = h;
+    this.dirty = true;
   }
 
   /** css-координаты → тексели поля (ось y вверх, как у gl_FragCoord). */
@@ -273,6 +277,7 @@ export default class EbruGame {
   flush() {
     const ops = this.ops;
     if (!ops.length) return;
+    this.dirty = true;
     for (let s = 0; s < ops.length; s += MAX_OPS) {
       const n = Math.min(MAX_OPS, ops.length - s);
       for (let i = 0; i < n; i++) {
@@ -294,11 +299,13 @@ export default class EbruGame {
     this.ops.length = 0;
     this.grow.clear();
     this.g.clear(this.F, -1, FAR, 0, 1);
+    this.dirty = true;
   }
 
   // ---------- Рисование ----------
 
   draw() {
+    this.dirty = false;
     const { width, height } = this.stage.canvas;
     // экранный пиксель (ось y вверх) → тексель поля
     const sx = (this.stage.w / width) * this.k;

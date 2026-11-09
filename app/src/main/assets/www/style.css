@@ -216,3 +216,7 @@ button {
 .rest-title { font-size: clamp(28px, 6vmin, 56px); }
 .rest-hint { font-size: clamp(13px, 2.2vmin, 18px); opacity: 0.6; }
 .rest-ui .moon-btn { position: relative; pointer-events: auto; width: clamp(72px, 13vmin, 120px); height: clamp(72px, 13vmin, 120px); opacity: 0.9; }
+
+/* скрытый счётчик кадров (для замеров) */
+.fps { position: absolute; top: calc(var(--sat) + 8px); left: 50%; transform: translateX(-50%); z-index: 20; pointer-events: none;
+  font: 700 13px/1 ui-monospace, monospace; color: #fff; background: rgba(0,0,0,0.55); padding: 5px 9px; border-radius: 8px; }
