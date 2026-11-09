@@ -43,5 +43,67 @@
 - Готовность: обезьяний тест всех игр, проверка утечек памяти, журнал ошибок, исправления после закрытого теста.
 
 ## 4. Витрина
-- Название (до 30 знаков), короткое описание (до 80), полное (до 4000) — uk и en. Черновики — после выбора названия.
-- Иконка 512×512 PNG, баннер 1024×500, скриншоты телефона (≥2, лучше 6–8), планшета 7" и 10", видео (по желанию).
+**Название (решение владельца 2026-11-09): Toddler First Game — baby touch games.**
+Google ограничивает заголовок 30 знаками, поэтому: заголовок «Toddler First Game» (18), а «baby touch games» — в коротком описании и тексте.
+Подпись под иконкой на телефоне остаётся короткой — «First Game» (длинное Android обрежет).
+
+### Заголовок (оба языка)
+Toddler First Game
+
+### Короткое описание (до 80)
+- en (71): Gentle touch games for babies & toddlers. No ads, no internet, no data.
+- uk (75): Ніжні ігри на дотик для малят. Без реклами, без інтернету, без збору даних.
+
+### Полное описание — en
+Toddler First Game is a set of calm baby touch games made by a dad for his little daughter — and now for yours.
+
+Every touch answers with a sound, a little animation and a gentle vibration, so even the youngest players understand: “I did that!”
+
+19 games inside:
+• Chicks — tap to hatch eggs, scatter grain, meet the fox
+• Train — a steam train with real chuff-chuff and whistle, animal passengers, stations and tunnels
+• Animals — farm and forest friends that wave, talk and react
+• Peekaboo — who is hiding behind the bush?
+• Feed the animals — give everyone their favourite food (and watch the funny “yuck!” faces)
+• Flashlight — find animals in the night with your fingers
+• Aquarium, Duckies, Bubbles, Blocks
+• Painting: Paint, Finger paint, Dripping paint, Ink in water, Marbling, Drawing
+• Night sky and Fireworks
+
+Made for parents, too:
+• No ads, no in-app purchases, no accounts
+• No internet access at all — the app cannot send anything anywhere
+• Exit protection: the game can be pinned to the screen, so swipes and split screen don’t throw the child out
+• Parent settings behind a 3-second hold: choose and reorder games, play-time limit with a sleepy “time to rest” screen, language
+• Works great on phones, tablets and foldables
+
+Open source: github.com/rulonoboev88/first-game
+
+### Полное описание — uk
+Toddler First Game — це спокійні ігри на дотик для малят. Їх зробив тато для своєї маленької доньки, а тепер — і для вашої.
+
+Кожен дотик відповідає звуком, маленькою анімацією та легкою вібрацією, тож навіть найменші розуміють: «Це я зробив!»
+
+19 ігор усередині:
+• Курчата — тапни, і з яйця вилупиться курча; сип зернятка, стережись лисички
+• Потяг — паровозик зі справжнім «чух-чух» і гудком, звірята-пасажири, станції та тунелі
+• Звірята — друзі з ферми та лісу махають, говорять і відповідають
+• Хованки — хто сховався за кущиком?
+• Нагодуй звірят — дай кожному улюблену їжу (і подивись на кумедне «бе-е!»)
+• Ліхтарик — шукай звірят уночі пальчиками
+• Акваріум, Качечки, Бульбашки, Кубики
+• Малювання: Фарби, Пальчикові фарби, Стікаюча фарба, Чорнило у воді, Ебру, Малювалка
+• Нічне небо та Салют
+
+І для батьків:
+• Без реклами, без покупок, без облікових записів
+• Взагалі без доступу до інтернету — застосунок фізично не може нічого надіслати
+• Захист від виходу: гру можна закріпити на екрані — свайпи й розділення екрана не викидають дитину
+• Налаштування для батьків — за утриманням 3 секунди: вибір і порядок ігор, обмеження часу гри з сонним екраном «Час відпочити», мова
+• Чудово працює на телефонах, планшетах і розкладачках
+
+Відкритий код: github.com/rulonoboev88/first-game
+
+### Графика (на утверждение владельцу)
+- Иконка 512×512 PNG — варианты А–Г отправлены 2026-11-09, ждём выбор.
+- Баннер 1024×500, скриншоты телефона (6–8), планшета 7" и 10", видео (по желанию).
