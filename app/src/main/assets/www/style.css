@@ -201,6 +201,7 @@ button {
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0; }
 .chip { padding: 9px 14px; border-radius: 999px; background: #F5EEE3; font-size: 15px; }
 .chip.on { background: #FF9F1C; color: #fff; }
+.chip .flag { margin-right: 6px; font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif; }
 .link { color: #E07B00; font-size: 15px; padding: 8px 0 0; }
 .row.vol .row-name { flex: none; }
 .range { flex: 1; min-width: 0; height: 32px; touch-action: none; -webkit-appearance: none; appearance: none; background: transparent; --v: 50%; }

@@ -68,13 +68,13 @@ function buildMenu() {
   const shown = visibleGames();
   const ready = shown.filter((g) => g.ready);
   if (prefs().surprise && ready.length > 1) {
-    tilesEl.appendChild(makeTile('surprise', SURPRISE_LABEL[LANG], null, {
+    tilesEl.appendChild(makeTile('surprise', SURPRISE_LABEL[LANG] || SURPRISE_LABEL.en, null, {
       surprise: true,
       onTap: () => openGame(ready[Math.floor(Math.random() * ready.length)]),
     }));
   }
   for (const g of shown) {
-    tilesEl.appendChild(makeTile(g.id, g.label[LANG], g.bg, {
+    tilesEl.appendChild(makeTile(g.id, g.label[LANG] || g.label.en, g.bg, {
       soon: !g.ready,
       onTap: () => openGame(g),
     }));

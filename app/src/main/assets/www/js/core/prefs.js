@@ -6,7 +6,7 @@ export const DEFAULTS = {
   order: null,        // порядок id игр (null — как в registry)
   hidden: [],         // id спрятанных игр
   surprise: true,     // плитка «Сюрприз»
-  lang: 'auto',       // auto | ru | uk | en
+  lang: 'auto',       // auto или код из LANGS
   timer: 0,           // минут игры, 0 — без ограничения
   gameHold: 1.5,      // сколько держать «домик» и «стереть» в игре, с
   pin: false,         // защита от выхода (закрепление приложения)
@@ -45,11 +45,20 @@ export function orderedGames(games) {
   return out;
 }
 
+/** Языки игры. Новый язык = строка здесь + подписи в registry.js и settings.js (STR) и rest. */
+export const LANGS = [
+  { code: 'uk', name: 'Українська', flag: '🇺🇦' },
+  { code: 'en', name: 'English', flag: '🇬🇧' },
+];
+
 export function detectLang() {
+  const has = (c) => LANGS.some((l) => l.code === c);
   const p = prefs().lang;
-  if (p && p !== 'auto') return p;
-  const l = (navigator.language || 'en').toLowerCase();
-  if (l.startsWith('uk')) return 'uk';
-  if (l.startsWith('ru')) return 'ru';
+  if (p && p !== 'auto' && has(p)) return p;
+  // язык телефона, если он у нас есть; иначе английский
+  for (const l of navigator.languages || [navigator.language || 'en']) {
+    const c = String(l).toLowerCase().slice(0, 2);
+    if (has(c)) return c;
+  }
   return 'en';
 }
