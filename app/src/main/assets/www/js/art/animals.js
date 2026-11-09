@@ -9,6 +9,7 @@ export const ANIMALS = ['cow', 'pig', 'sheep', 'goat', 'horse', 'dog', 'cat', 'f
 export const BIRD_HEADS = ['hen', 'rooster', 'duck', 'goose'];
 
 export const INK = '#3D2614';
+export { tone as shadeTone };
 
 const P = (d) => new Path2D(d);
 const E = (x, y, rx, ry, rot = 0) => { const p = new Path2D(); p.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2); return p; };
@@ -29,8 +30,8 @@ function tone(h, k) {
 
 // ---------- Кисть ----------
 
-function kit(ctx) {
-  const K = { ctx };
+export function kit(ctx) {
+  const K = { ctx, mood: null };
   /** Деталь с объёмом: заливка, тень по нижне-правому краю, мягкий блик, контур. */
   K.part = (p, fill, o = {}) => {
     ctx.fillStyle = fill; ctx.fill(p);
@@ -61,6 +62,24 @@ function kit(ctx) {
   K.eye = (x, y, r, o = {}) => {
     const { look = 0, lid = 0, lash = 0, brow = null, browTilt = 0, skin = '#fff', iris = '#6B3F22', slit = false, blink = false, wide = 0 } = o;
     const ry = r * (1 + wide * 0.12);
+    if (K.mood === 'yum') {
+      // довольные глазки-дужки «^ ^»
+      const p = new Path2D(); p.moveTo(x - r * 0.85, y + r * 0.25); p.quadraticCurveTo(x, y - r * 0.85, x + r * 0.85, y + r * 0.25);
+      K.line(p, 3.4);
+      return;
+    }
+    if (K.mood === 'yuck') {
+      // зажмурился «> <»
+      const s = x < 0 ? 1 : -1;
+      const p = new Path2D(); p.moveTo(x - s * r * 0.7, y - r * 0.6); p.lineTo(x + s * r * 0.6, y); p.lineTo(x - s * r * 0.7, y + r * 0.6);
+      K.line(p, 3.4);
+      if (brow != null) {
+        const by = y - r * 1.5 - brow;
+        const q = new Path2D(); q.moveTo(x - s * r * 0.8, by - r * 0.35); q.lineTo(x + s * r * 0.7, by + r * 0.2);
+        K.line(q, 2.8);
+      }
+      return;
+    }
     if (brow != null) {
       const by = y - ry * 1.45 - brow - wide * 3;
       const p = new Path2D(); p.moveTo(x - r * 0.75, by + r * 0.15 + browTilt); p.quadraticCurveTo(x, by - r * 0.25, x + r * 0.75, by + r * 0.15 - browTilt);
@@ -116,6 +135,17 @@ function kit(ctx) {
    */
   K.mouth = (x, y, w, open, o = {}) => {
     const { smile = 5, tongue = true, teeth = 0, closed = null, h = 13, col = '#7A2E2E' } = o;
+    if (K.mood === 'yuck') {
+      // «бе-е»: волнистые губки и высунутый язычок
+      const ww = Math.max(20, w);
+      const t = new Path2D(); t.moveTo(x - 6, y + 1); t.lineTo(x - 6.5, y + 8); t.quadraticCurveTo(x - 6, y + 15, x, y + 15); t.quadraticCurveTo(x + 6, y + 15, x + 6.5, y + 8); t.lineTo(x + 6, y + 1); t.closePath();
+      K.part(t, '#FF8FAB', { flat: true, lw: 2.4 });
+      K.line(P(`M${x} ${y + 3} L${x} ${y + 10}`), 1.6, 'rgba(160,40,70,0.55)');
+      const q = new Path2D(); q.moveTo(x - ww / 2, y + 1);
+      for (let i = 1; i <= 4; i++) q.quadraticCurveTo(x - ww / 2 + ww * (i - 0.5) / 4, y + (i % 2 ? -3 : 3), x - ww / 2 + ww * i / 4, y + 1);
+      K.line(q, 3);
+      return;
+    }
     if (open < 0.08) {
       K.line(closed || P(`M${x - w / 2} ${y} Q${x} ${y + smile} ${x + w / 2} ${y}`), 3);
       return;
@@ -261,6 +291,7 @@ function gooseBody(K) {
 }
 function rabbitPaws(K, o, col) {
       const ctx = K.ctx;
+      if (K.props === false) { pawsRound(K, col, o.wave, true); return; }
       ctx.save(); ctx.translate(0, 42 - (o.wave || 0) * 4); ctx.rotate(-0.12);
       for (const [dx, a] of [[-24, -0.5], [-24, 0], [-24, 0.5]]) {
         ctx.save(); ctx.translate(dx, 0); ctx.rotate(a);
@@ -476,11 +507,13 @@ const CHARS = {
       ctx.restore();
       K.part(E(0, 12, 23, 16), '#FFF4E6', { box: [-23, -4, 23, 28], flat: true, lw: 0 });
       // рот: язык набок (закрыт) / открытая пасть
+      if (K.mood === 'yuck') K.mouth(0, 16, 22, o.open); else {
       const op = Math.max(0.35, o.open);
       const mouth = P(`M-15 12 C-12 ${22 + op * 10} 12 ${22 + op * 10} 15 12 C8 16 -8 16 -15 12 Z`);
       K.part(mouth, '#7A2E2E', { flat: true, lw: 2.6 });
       K.part(P(`M-2 18 C-6 ${30 + op * 6} 12 ${34 + op * 6} 12 22 C8 18 2 17 -2 18 Z`), '#FF8FAB', { box: [-6, 17, 12, 40], lw: 2.4 });
       K.line(P('M5 21 L5 29'), 1.8, 'rgba(160,40,70,0.6)');
+      }
       K.part(P('M-10 1 C-10 -6 10 -6 10 1 C10 6 4 10 0 10 C-4 10 -10 6 -10 1 Z'), '#2B1D17', { flat: true, lw: 2.4 });
       ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.ellipse(-3.5, -1.5, 3.5, 2, -0.3, 0, Math.PI * 2); ctx.fill();
       K.line(P('M0 10 L0 13'), 2.6);
@@ -639,6 +672,7 @@ const CHARS = {
     paws(K, o) {
       // кусочек сыра в лапках
       const ctx = K.ctx;
+      if (K.props === false) { pawsRound(K, '#FFC9D4', o.wave, false); return; }
       ctx.save(); ctx.translate(0, 40 - (o.wave || 0) * 4);
       const cheese = P('M-14 8 L14 8 L14 -2 L-14 -10 Z');
       K.part(cheese, '#FFD43B', { box: [-14, -10, 14, 8] });
@@ -838,6 +872,7 @@ const CHARS = {
     },
     paws(K, o) {
       const ctx = K.ctx;
+      if (K.props === false) { pawsRound(K, '#9C6B45', o.wave, true); return; }
       ctx.save(); ctx.translate(0, 38 - (o.wave || 0) * 4);
       const pot = P('M-13 -6 C-15 4 -13 12 -8 14 L8 14 C13 12 15 4 13 -6 Z');
       K.part(pot, '#E9A23B', { box: [-15, -6, 15, 14] });
@@ -929,6 +964,7 @@ const CHARS = {
     },
     paws(K, o) {
       const ctx = K.ctx;
+      if (K.props === false) { pawsRound(K, '#D9813B', o.wave, false); return; }
       ctx.save(); ctx.translate(0, 40 - (o.wave || 0) * 4);
       K.part(P('M-9 -2 C-9 8 -4 13 0 13 C4 13 9 8 9 -2 Z'), '#C08040', { box: [-9, -2, 9, 13] });
       K.part(P('M-11 -2 C-11 -10 11 -10 11 -2 Z'), '#7A4A24', { flat: true, lw: 2.4 });
@@ -942,29 +978,36 @@ const CHARS = {
 // ---------- Публичное API ----------
 
 /** Лапки, держащиеся за край (вызывается в «координатах мордочки», 100 единиц). */
-export function drawPaws(ctx, kind, wave = 0) {
+export function drawPaws(ctx, kind, wave = 0, props = true) {
   const ch = CHARS[kind];
   if (!ch) return;
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  ch.paws(kit(ctx), { wave });
+  const K = kit(ctx);
+  K.props = props;
+  ch.paws(K, { wave });
 }
 
 /**
- * Рисует зверя. o: { blink, open (голос 0..1), ear (-1..1), look (-1..1), paws, wave, body (плечики, по умолчанию да), wink }
+ * Рисует зверя. o: { blink, open (голос 0..1), ear (-1..1), look (-1..1), paws, wave, body (плечики, по умолчанию да), wink,
+ *   mood ('yum' — довольные глазки, 'yuck' — «фу, бе-е»), chew (0..1 — жуёт, рот без вытягивания головы) }
  */
 export function drawAnimal(ctx, kind, x, y, size, o = {}) {
   const ch = CHARS[kind];
   if (!ch) return;
   const opts = { blink: false, open: 0, ear: 0, look: 0, wave: 0, wink: false, ...o };
+  // голос: голова вытягивается вверх от подбородка (жевание — только рот, без вытягивания)
+  const op = opts.open;
+  if (o.chew) opts.open = Math.max(opts.open, o.chew);
+  if (o.mood === 'yuck') opts.open = Math.max(opts.open, 0.1);
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(size / 100, size / 100);
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   const K = kit(ctx);
+  K.mood = o.mood || null;
+  K.props = o.props;
   if (o.body !== false) ch.body(K, opts);
-  // голос: голова вытягивается вверх от подбородка
-  const op = opts.open;
   ctx.save();
   ctx.translate(0, 30);
   ctx.scale(1 - op * 0.035, 1 + op * 0.07);

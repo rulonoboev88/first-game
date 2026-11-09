@@ -5,6 +5,7 @@ import { drawAnimal } from './animals.js';
 import { drawFish } from './sea.js';
 import { drawLoco } from './train.js';
 import { drawRubberDuck } from '../games/ducks.js';
+import { drawFood } from './food.js';
 
 function circle(ctx, x, y, r, fill, stroke = INK, lw) {
   ctx.beginPath();
@@ -143,6 +144,39 @@ export const ICONS = {
     ctx.scale(S * 0.6, S * 0.6);
     drawLoco(ctx, { ang: 0.6 });
     ctx.restore();
+  },
+
+  feed(ctx, S) {
+    drawAnimal(ctx, 'bear', S * 0.46, S * 0.48, S * 0.66, { body: false, paws: false, mood: 'yum', chew: 0.3 });
+    drawFood(ctx, 'honey', S * 0.72, S * 0.74, S * 0.4, { rot: 0.15 });
+  },
+
+  flashlight(ctx, S) {
+    // ночь, луч фонарика выхватывает котика, рядом в темноте светятся глазки
+    ctx.save();
+    ctx.beginPath(); ctx.roundRect(S * 0.08, S * 0.08, S * 0.84, S * 0.84, S * 0.18);
+    ctx.fillStyle = '#1B2558'; ctx.fill();
+    ctx.clip();
+    ctx.fillStyle = '#FFF3BF';
+    for (const [x, y, r] of [[0.2, 0.22, 0.012], [0.32, 0.15, 0.008], [0.8, 0.2, 0.01], [0.86, 0.36, 0.007]]) { ctx.beginPath(); ctx.arc(S * x, S * y, S * r, 0, Math.PI * 2); ctx.fill(); }
+    const lx = S * 0.58, ly = S * 0.5, R = S * 0.3;
+    ctx.beginPath(); ctx.arc(lx, ly, R, 0, Math.PI * 2);
+    ctx.fillStyle = '#8FCB72'; ctx.fill();
+    ctx.save(); ctx.clip();
+    ctx.fillStyle = '#9DC3F2'; ctx.fillRect(lx - R, ly - R, R * 2, R * 0.95);
+    drawAnimal(ctx, 'cat', lx, ly + S * 0.04, S * 0.4, { body: false, paws: false, open: 0.3 });
+    ctx.restore();
+    ctx.lineWidth = S * 0.012; ctx.strokeStyle = 'rgba(255,240,190,0.7)';
+    ctx.beginPath(); ctx.arc(lx, ly, R, 0, Math.PI * 2); ctx.stroke();
+    for (const x of [0.18, 0.28]) {
+      const g = ctx.createRadialGradient(S * x, S * 0.72, 0, S * x, S * 0.72, S * 0.07);
+      g.addColorStop(0, 'rgba(230,255,150,0.6)'); g.addColorStop(1, 'rgba(230,255,150,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(S * x, S * 0.72, S * 0.07, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#F5FFBE'; ctx.beginPath(); ctx.ellipse(S * x, S * 0.72, S * 0.025, S * 0.03, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+    ctx.lineWidth = S * 0.026; ctx.strokeStyle = INK;
+    ctx.beginPath(); ctx.roundRect(S * 0.08, S * 0.08, S * 0.84, S * 0.84, S * 0.18); ctx.stroke();
   },
 
   animals(ctx, S) {
