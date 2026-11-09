@@ -32,6 +32,8 @@ export const GAMES = [
     load: () => import('./ink.js') },
   { id: 'ebru', ready: true, bg: '#F3EDE1', label: { uk: 'Ебру', ru: 'Эбру', en: 'Marbling' },
     load: () => import('./ebru.js') },
+  { id: 'ebru2', ready: true, bg: '#F3EDE1', label: { uk: 'Ебру 2', ru: 'Эбру 2', en: 'Marbling 2' },
+    load: () => import('./ebru2.js') },
   { id: 'draw',      ready: true,  bg: '#F1EAFF', label: { uk: 'Малювалка', ru: 'Рисовалка', en: 'Drawing' },
     load: () => import('./draw.js') },
   { id: 'sky', ready: true, bg: '#E3E6FF', label: { uk: 'Нічне небо', ru: 'Ночное небо', en: 'Night sky' },

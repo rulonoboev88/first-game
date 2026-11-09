@@ -29,13 +29,18 @@ export function setPref(k, v) {
   try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch (_) {}
 }
 
-/** Игры в порядке, заданном родителем (новые игры — в конец списка, на свои места из registry). */
+/** Игры в порядке, заданном родителем (новая игра встаёт за своим соседом из registry). */
 export function orderedGames(games) {
   const order = prefs().order;
   if (!order) return [...games];
   const byId = new Map(games.map((g) => [g.id, g]));
   const out = order.filter((id) => byId.has(id)).map((id) => byId.get(id));
-  for (const g of games) if (!order.includes(g.id)) out.push(g);
+  // новую игру ставим сразу за той, что стоит перед ней в registry
+  games.forEach((g, i) => {
+    if (order.includes(g.id)) return;
+    const prev = i > 0 ? out.indexOf(games[i - 1]) : -1;
+    out.splice(prev + 1, 0, g);
+  });
   return out;
 }
 

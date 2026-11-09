@@ -134,6 +134,8 @@ export class GL {
         gl.activeTexture(gl.TEXTURE0 + unit);
         gl.bindTexture(gl.TEXTURE_2D, v.read.tex);
         gl.uniform1i(u.loc, unit++);
+      } else if (v && typeof v === 'object' && 'iv' in v) {
+        gl.uniform2i(u.loc, v.iv[0], v.iv[1]);
       } else if (v && typeof v === 'object' && 'i' in v) {
         gl.uniform1i(u.loc, v.i);
       } else if (typeof v === 'number') {

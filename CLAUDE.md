@@ -1,5 +1,7 @@
 # First Game — notes for Claude sessions
 
+**Current work: `docs/RELEASE_PLAN.md` — the approved release plan with checkboxes and a log. Read it, continue from the first unchecked item, update it as you go.**
+
 Read `SPEC.md` first: it is the source of truth for every product decision (in Russian, the owner speaks Russian).
 Answer the owner in Russian. Commit messages in English.
 
