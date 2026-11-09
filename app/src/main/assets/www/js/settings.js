@@ -20,8 +20,6 @@ export const STR = {
     about: 'Про застосунок', version: 'Версія', source: 'Відкритий вихідний код',
     privacy: 'Безкоштовно і без реклами. Гра не має доступу до інтернету: нічого не збирає і нікуди не надсилає. Налаштування зберігаються лише на цьому пристрої.',
     credits: 'Голоси звірят — записи в суспільному надбанні (CC0): BigSoundBank (Joseph Sardin), Freesound (digpro120, jahjahjahjah, jarredgibb, qubodup, calebmills99, nivatius, Setzilla, philberts), U.S. Fish & Wildlife Service. Інші звуки синтезовано в коді.',
-    sound: 'Звук', volume: 'Гучність', volLock: 'Кнопки гучності не працюють у грі',
-    volHint: 'Малюк не зможе випадково вимкнути звук або зробити його надто гучним. Гучність змінюється лише тут.',
     errs: 'Звіт про помилки', errNone: 'Помилок не було.', errCount: 'Записано помилок:', errSend: 'Надіслати звіт', errClear: 'Очистити',
     errHint: 'Помилки записуються лише на цьому телефоні. Звіт надсилається, тільки якщо ви самі його відправите (пошта, месенджер).',
     rest: 'Час відпочити', restHint: 'тримайте місяць',
@@ -42,8 +40,6 @@ export const STR = {
     about: 'About', version: 'Version', source: 'Open source',
     privacy: 'Free, no ads. The game has no internet access: it collects nothing and sends nothing. Settings are stored only on this device.',
     credits: 'Animal voices are public-domain recordings (CC0): BigSoundBank (Joseph Sardin), Freesound (digpro120, jahjahjahjah, jarredgibb, qubodup, calebmills99, nivatius, Setzilla, philberts), U.S. Fish & Wildlife Service. All other sounds are synthesized in code.',
-    sound: 'Sound', volume: 'Volume', volLock: 'Volume buttons do nothing in the game',
-    volHint: 'Your little one can’t mute the game or make it too loud by accident. Volume is changed only here.',
     errs: 'Error report', errNone: 'No errors so far.', errCount: 'Errors recorded:', errSend: 'Send report', errClear: 'Clear',
     errHint: 'Errors are recorded only on this phone. The report is sent only if you send it yourself (email, messenger).',
     rest: 'Time to rest', restHint: 'hold the moon',
@@ -150,22 +146,6 @@ export function buildSettings(ctx) {
   const pinRow = el('div', 'row plain');
   pinRow.append(el('span', 'row-name', S.pinOn), toggle(p.pin, (v) => { setPref('pin', v); ctx.onChange('pin'); }));
   right.appendChild(card(S.pin, pinRow, el('p', 'hint', S.pinHint), el('p', 'hint tip', S.pinTip), native ? null : el('p', 'hint warn', S.pinNo)));
-
-  // --- Звук: громкость телефона и блокировка кнопок громкости ---
-  const N = window.FGNative;
-  if (N && N.getVolume) {
-    const vrow = el('div', 'row plain vol');
-    const range = el('input', 'range');
-    range.type = 'range'; range.min = 0; range.max = 100; range.step = 1;
-    range.value = Math.round(Math.max(0, N.getVolume()) * 100);
-    const paint = () => range.style.setProperty('--v', range.value + '%');
-    paint();
-    range.addEventListener('input', () => { paint(); try { N.setVolume(range.value / 100); } catch (_) {} });
-    vrow.append(el('span', 'row-name', S.volume), range);
-    const lrow = el('div', 'row plain');
-    lrow.append(el('span', 'row-name', S.volLock), toggle(p.volLock, (v) => { setPref('volLock', v); ctx.onChange('volLock'); }));
-    right.appendChild(card(S.sound, vrow, lrow, el('p', 'hint', S.volHint)));
-  }
 
   // --- Кнопки в игре ---
   right.appendChild(card(S.hold,

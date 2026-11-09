@@ -247,16 +247,6 @@ export const ICONS = {
     });
   },
 
-  ebru2(ctx, S) {
-    // временная плитка для сравнения: та же картинка + «2» в уголке
-    ICONS.ebru(ctx, S);
-    ctx.fillStyle = '#FFFFFF'; ctx.strokeStyle = INK; ctx.lineWidth = S * 0.025;
-    ctx.beginPath(); ctx.arc(S * 0.8, S * 0.2, S * 0.13, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = INK; ctx.font = `900 ${S * 0.18}px Nunito, sans-serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('2', S * 0.8, S * 0.21);
-  },
-
   surprise(ctx, S) {
     const lw = S * 0.028;
     roundRect(ctx, S * 0.2, S * 0.42, S * 0.6, S * 0.4, S * 0.05, '#F783AC', lw);

@@ -197,7 +197,6 @@ function openSettings() {
     onChange: (key) => {
       if (key === 'gameHold') { homeBtn.setDuration(prefs().gameHold * 1000); eraseBtn.setDuration(prefs().gameHold * 1000); }
       if (key === 'pin') applyPin();
-      if (key === 'volLock') applyVolumeLock();
       if (key === 'timer') playSec = 0;
       if (key === 'lang') { LANG = detectLang(); document.documentElement.lang = LANG; openSettings(); }
     },
@@ -211,11 +210,6 @@ function closeSettings() {
   settingsEl.classList.add('hidden');
   menuEl.classList.remove('hidden');
   buildMenu();
-}
-
-function applyVolumeLock() {
-  const n = native();
-  if (n && n.setVolumeLock) { try { n.setVolumeLock(!!prefs().volLock); } catch (_) {} }
 }
 
 function applyPin() {
@@ -292,4 +286,3 @@ window.addEventListener('blur', () => { if (current) current.input.releaseAll();
 document.fonts && document.fonts.ready.then(buildMenu);
 if (!document.fonts) buildMenu();
 applyPin();
-applyVolumeLock();
