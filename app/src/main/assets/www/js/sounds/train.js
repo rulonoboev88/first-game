@@ -170,11 +170,6 @@ export function puffPop(pan = 0) {
   tone({ freq: 260, to: 120, dur: 0.12, type: 'sine', gain: 0.07, attack: 0.003, pan, wet: 0.4 });
 }
 
-/** Большой клуб дыма из трубы. */
-export function bigPuff(pan = 0, echo = false) {
-  chuff(pan, 2.2, echo);
-  noise({ dur: 0.5, gain: 0.05, type: 'bandpass', freq: 500, to: 200, q: 0.8, attack: 0.02, pan, wet: 0.8 });
-}
 
 /** «Бип-бип» машинки. */
 export function carBeep(pan = 0) {

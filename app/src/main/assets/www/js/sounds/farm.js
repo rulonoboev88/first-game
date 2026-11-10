@@ -24,12 +24,6 @@ function panicChirpSynth(pan = 0) {
   }
 }
 
-/** Золотой цыплёнок: писк + волшебный перезвон. */
-function goldChirpSynth(pan = 0) {
-  chirpSynth({ pan, loud: true });
-  [1568, 1976, 2349, 3136].forEach((f, i) => chime(f, { gain: 0.07, dur: 0.9, at: 0.05 + i * 0.07, pan }));
-}
-
 function quackSyllable({ f, dur, at, pan, gain, formant }) {
   tone({ freq: f, to: f * 0.78, dur, type: 'sawtooth', gain, attack: 0.01, release: dur * 0.5, at, pan, wet: 0.4,
     filter: { type: 'bandpass', freq: formant, q: 3 } });
@@ -91,20 +85,6 @@ function gobbleSynth(pan = 0) {
     tone({ freq: f, to: f * 0.9, dur: 0.045, type: 'sawtooth', gain: 0.22, attack: 0.004, release: 0.03, at: i * 0.055, pan, wet: 0.5,
       filter: { type: 'bandpass', freq: 900, q: 2 } });
   }
-}
-
-/** Тявканье лисы — игривое. */
-function yipSynth(pan = 0) {
-  for (let i = 0; i < 2; i++) {
-    const at = i * 0.18;
-    tone({ freq: 900, to: 1500, dur: 0.06, type: 'triangle', gain: 0.22, attack: 0.004, at, pan, wet: 0.6, curve: 'lin' });
-    tone({ freq: 1500, to: 800, dur: 0.08, type: 'triangle', gain: 0.2, attack: 0.004, at: at + 0.055, pan, wet: 0.6 });
-  }
-}
-
-/** «Хм…» — лиса ушла ни с чем. */
-function foxSighSynth(pan = 0) {
-  tone({ freq: 340, to: 200, dur: 0.5, type: 'triangle', gain: 0.18, attack: 0.03, at: 0, pan, wet: 0.8, vibrato: 8, vibratoRate: 5 });
 }
 
 /** Треск скорлупы. */

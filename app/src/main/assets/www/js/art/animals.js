@@ -6,7 +6,6 @@
 // Анимация голоса: o.open (0..1) — рот/клюв открыт; голова вытягивается вверх, уши приподнимаются, брови взлетают.
 
 export const ANIMALS = ['cow', 'pig', 'sheep', 'goat', 'horse', 'dog', 'cat', 'frog', 'owl', 'mouse', 'rabbit', 'hedgehog', 'bear', 'fox', 'squirrel'];
-export const BIRD_HEADS = ['hen', 'rooster', 'duck', 'goose'];
 
 export const INK = '#3D2614';
 export { tone as shadeTone };

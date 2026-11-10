@@ -10,6 +10,7 @@ import { prefs, orderedGames, detectLang, MENU_HOLD } from './core/prefs.js';
 import { buildSettings, STR } from './settings.js';
 import { RestScene } from './rest.js';
 import { safe, logError, setErrorContext } from './core/errlog.js';
+import { needWelcome, showWelcome } from './welcome.js';
 
 let LANG = detectLang();
 document.documentElement.lang = LANG;
@@ -22,18 +23,18 @@ const IDLE_MS = 15000;
 // Скрытый счётчик кадров для замеров на телефоне (включается в «О приложении»: удерживать строку версии 2 с).
 const fpsMeter = (() => {
   const el = document.getElementById('fps');
-  let t0 = 0, n = 0, drawn = 0, worst = 0, prev = 0;
+  let t0 = 0, drawn = 0, worst = 0, prev = 0;
   return {
-    reset() { t0 = 0; n = 0; drawn = 0; worst = 0; prev = 0; el.classList.toggle('hidden', !prefs().fps); },
+    reset() { t0 = 0; drawn = 0; worst = 0; prev = 0; el.classList.toggle('hidden', !prefs().fps); },
     tick(t) {
       if (!prefs().fps) return;
       if (prev) worst = Math.max(worst, t - prev);
-      prev = t; n++;
+      prev = t;
       if (!t0) t0 = t;
       if (t - t0 >= 1000) {
         const fps = Math.round((drawn * 1000) / (t - t0));
-        el.textContent = (drawn ? `${fps} fps · max ${Math.round(worst)} ms` : 'картинка стоит') + (current && t - current.lastInput > IDLE_MS ? ' · покой' : '');
-        t0 = t; n = 0; drawn = 0; worst = 0;
+        el.textContent = (drawn ? `${fps} fps · max ${Math.round(worst)} ms` : 'still') + (current && t - current.lastInput > IDLE_MS ? ' · idle' : '');
+        t0 = t; drawn = 0; worst = 0;
       }
     },
     drawn() { drawn++; },
@@ -61,7 +62,7 @@ function drawIcon(canvas, id) {
   const ctx = canvas.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, S, S);
-  (ICONS[id] || ICONS.test)(ctx, S);
+  if (ICONS[id]) ICONS[id](ctx, S);
 }
 
 function makeTile(id, label, bg, { soon = false, surprise = false, onTap }) {
@@ -339,3 +340,14 @@ window.addEventListener('blur', () => { if (current) current.input.releaseAll();
 document.fonts && document.fonts.ready.then(buildMenu);
 if (!document.fonts) buildMenu();
 applyPin();
+
+// Первый запуск: сначала несколько слов для родителя, потом меню.
+if (needWelcome()) {
+  const wEl = document.getElementById('welcome');
+  menuEl.classList.add('hidden');
+  showWelcome(wEl, {
+    onLang: () => { LANG = detectLang(); document.documentElement.lang = LANG; },
+    onPin: applyPin,
+    onDone: () => { haptic(1); wEl.classList.add('hidden'); wEl.innerHTML = ''; menuEl.classList.remove('hidden'); buildMenu(); },
+  });
+}

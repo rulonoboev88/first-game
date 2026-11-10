@@ -11,7 +11,3 @@ export function mouthFrom(voice, prev, dt) {
   return Math.max(Math.min(1, t), fall);
 }
 
-/** Голос ещё звучит? (с небольшим хвостом) */
-export function voiceActive(voice, t) {
-  return !!voice && t < voice.dur + 0.15;
-}

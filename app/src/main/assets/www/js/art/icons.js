@@ -1,5 +1,5 @@
 // Иконки плиток меню. Каждая функция рисует в квадрат S×S (CSS-пиксели).
-import { INK } from './chick.js';
+import { INK } from './ink.js';
 import { drawBird } from './birds.js';
 import { drawAnimal } from './animals.js';
 import { drawFish } from './sea.js';
@@ -32,13 +32,6 @@ function star(ctx, x, y, r1, r2, n = 5, rot = -Math.PI / 2) {
 }
 
 export const ICONS = {
-  test(ctx, S) {
-    const lw = S * 0.028;
-    const cols = ['#FF6B6B', '#4DABF7', '#51CF66', '#FFD43B'];
-    [[0.36, 0.4, 0.2], [0.62, 0.36, 0.16], [0.5, 0.64, 0.18], [0.7, 0.66, 0.11]].forEach(([x, y, r], i) =>
-      circle(ctx, x * S, y * S, r * S, cols[i], INK, lw));
-  },
-
   chicks(ctx, S) {
     drawBird(ctx, 'chick', S * 0.5, S * 0.88, S * 0.78, { step: 0.25 });
   },

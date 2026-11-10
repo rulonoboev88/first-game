@@ -56,6 +56,8 @@ const db = (v) => (v > 0 ? +(20 * Math.log10(v)).toFixed(1) : -99);
   const b = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
   const pg = await b.newPage({ viewport: { width: 390, height: 860 }, deviceScaleFactor: 1, locale: 'uk-UA' });
   const errs = []; pg.on('pageerror', (e) => errs.push(e.message));
+  // экран первого запуска уже пройден — сразу меню
+  await pg.addInitScript(() => { try { const k = 'fg.prefs.v1'; localStorage.setItem(k, JSON.stringify({ ...JSON.parse(localStorage.getItem(k) || '{}'), welcomed: true })); } catch (_) {} });
   await pg.goto(`http://localhost:${process.env.PORT || 8765}/index.html`);
   await pg.waitForTimeout(800);
   await pg.addScriptTag({ content: PAGE });

@@ -5,7 +5,7 @@
 import { loadScript } from '../core/loadScript.js';
 import { tone, noise, chime, pentaFreq, panFor } from '../core/audio.js';
 import { haptic } from '../core/haptics.js';
-import { INK } from '../art/chick.js';
+import { INK } from '../art/ink.js';
 
 const COLORS = ['#FF6B6B', '#FFA94D', '#FFD43B', '#69DB7C', '#38D9A9', '#4DABF7', '#748FFC', '#B197FC', '#F783AC'];
 const MAX_BLOCKS = 160;

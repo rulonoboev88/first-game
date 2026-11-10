@@ -2,6 +2,7 @@
 // сколько держать кнопки в игре, защита от выхода (закрепление приложения), «О приложении».
 import { prefs, setPref, orderedGames, MENU_HOLD, LANGS } from './core/prefs.js';
 import { errors, clearErrors } from './core/errlog.js';
+import { CHANGELOG } from './changelog.js';
 
 export const STR = {
   uk: {
@@ -23,6 +24,7 @@ export const STR = {
     errs: 'Звіт про помилки', errNone: 'Помилок не було.', errCount: 'Записано помилок:', errSend: 'Надіслати звіт', errClear: 'Очистити',
     errHint: 'Помилки записуються лише на цьому телефоні. Звіт надсилається, тільки якщо ви самі його відправите (пошта, месенджер).',
     rest: 'Час відпочити', restHint: 'тримайте місяць',
+    news: 'Що нового', libs: 'Фізика кубиків — matter-js (MIT), шрифт Nunito (SIL OFL 1.1). Код гри — ліцензія MIT.',
   },
   en: {
     title: 'For parents', back: 'Done',
@@ -43,6 +45,7 @@ export const STR = {
     errs: 'Error report', errNone: 'No errors so far.', errCount: 'Errors recorded:', errSend: 'Send report', errClear: 'Clear',
     errHint: 'Errors are recorded only on this phone. The report is sent only if you send it yourself (email, messenger).',
     rest: 'Time to rest', restHint: 'hold the moon',
+    news: 'What’s new', libs: 'Block physics — matter-js (MIT), Nunito font (SIL OFL 1.1). Game code — MIT license.',
   },
 };
 
@@ -198,8 +201,14 @@ export function buildSettings(ctx) {
     el('p', 'hint', S.privacy),
     el('p', 'hint', `${S.source}: <span class="mono">github.com/rulonoboev88/first-game</span>`),
     el('p', 'hint', S.credits),
+    el('p', 'hint', S.libs),
   );
   right.appendChild(card(S.about, ab));
+
+  // --- Что нового ---
+  const news = el('ul', 'news');
+  for (const c of CHANGELOG) news.appendChild(el('li', 'hint', `<b>${c.v}</b> — ${c[ctx.lang] || c.en}`));
+  right.appendChild(card(S.news, news));
 }
 
 /** Перетаскивание строки за ручку внутри списка. */

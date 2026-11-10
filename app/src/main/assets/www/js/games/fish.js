@@ -3,7 +3,7 @@
 // Проведение пальцем → сыплется корм, рыбки сбегаются. Тап по дну → краб, улитка, звезда, рак-отшельник, ёжик.
 // Тап по рыбке → она резко уплывает. Стирание — кнопка, удержание 2 с.
 import { drawFish, drawBottom, FISH, BOTTOM } from '../art/sea.js';
-import { INK } from '../art/chick.js';
+import { INK } from '../art/ink.js';
 import { tone, noise, chime, pentaFreq, panFor } from '../core/audio.js';
 import { haptic } from '../core/haptics.js';
 

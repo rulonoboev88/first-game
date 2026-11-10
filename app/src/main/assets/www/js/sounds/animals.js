@@ -4,13 +4,6 @@ import { tone, noise, loadSamples, playSample, fakeVoice } from '../core/audio.j
 const rnd = (a, b) => a + Math.random() * (b - a);
 const DIR = 'sounds/animals';
 
-// Какие записи есть для каждого зверя (файлы sounds/animals/<имя>.ogg).
-export const ANIMAL_SAMPLES = {
-  cow: ['cow_1', 'cow_2'], sheep: ['sheep_1', 'sheep_2'], goat: ['goat_1', 'goat_2'],
-  horse: ['horse_1', 'horse_2'], dog: ['dog_1', 'dog_2'], cat: ['cat_1', 'cat_2'],
-  frog: ['frog_1', 'frog_2'], owl: ['owl_1'], pig: ['pig_1', 'pig_2'],
-  bear: ['bear_1', 'bear_2'], fox: ['fox_1', 'fox_2'], squirrel: ['squirrel_1', 'squirrel_2'],
-};
 const GAIN = { cow: 0.55, sheep: 0.55, goat: 0.55, horse: 0.5, dog: 0.5, cat: 0.55, frog: 0.6, owl: 0.6, pig: 0.55, bear: 0.6, fox: 0.6, squirrel: 0.6 };
 
 let manifest = null;

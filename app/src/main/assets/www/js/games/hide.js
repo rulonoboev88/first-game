@@ -2,7 +2,7 @@
 // Из-за куста и стога торчат ушки, в тёмном окошке моргают глазки.
 // Тап по укрытию → зверь выпрыгивает: «ку-ку!» — и снова прячется (иногда меняется на другого).
 import { drawAnimal, ANIMALS } from '../art/animals.js';
-import { INK } from '../art/chick.js';
+import { INK } from '../art/ink.js';
 import { panFor, noise } from '../core/audio.js';
 import { haptic } from '../core/haptics.js';
 import { animalVoice, preloadAnimals, cuckoo, whoosh } from '../sounds/animals.js';

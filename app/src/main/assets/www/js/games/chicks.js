@@ -158,7 +158,7 @@ export default class ChicksGame {
     const { w } = this.stage;
     f.t += dt;
     const speed = f.sz * 3.2;
-    let px = f.x, py = f.y;
+    let px = f.x;
     if (f.phase === 'in') {
       const tx = f.cx + (f.fromLeft ? -f.r : f.r), ty = f.cy;
       const dx = tx - f.x, dy = ty - f.y, d = Math.hypot(dx, dy);

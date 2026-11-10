@@ -1,0 +1,21 @@
+// «Що нового» в «Про застосунок». Новая версия — новая запись сверху (номер = номер сборки CI).
+export const CHANGELOG = [
+  { v: '0.1.47',
+    uk: 'Екран першого запуску для батьків. Дрібні виправлення.',
+    en: 'A first-run screen for parents. Small fixes.' },
+  { v: '0.1.45',
+    uk: '«Нагодуй звірят»: 34 смаколики, у кожного звіра чотири улюблені.',
+    en: 'Feed the animals: 34 foods, every animal has four favourites.' },
+  { v: '0.1.41',
+    uk: '«Салют»: ракету можна кинути пальцем — вона ковзає і відскакує від країв.',
+    en: 'Fireworks: fling a rocket with your finger — it glides and bounces off the edges.' },
+  { v: '0.1.36',
+    uk: '«Потяг»: справжні звуки парового потяга і гудки.',
+    en: 'Train: real steam locomotive chuffs and whistles.' },
+  { v: '0.1.34',
+    uk: 'Гучність ігор вирівняно; кожен дотик відповідає звуком.',
+    en: 'Game volumes levelled; every tap answers with a sound.' },
+  { v: '0.1.31',
+    uk: 'Нове плавне «Ебру». Гучність — кнопками телефона. Звіт про помилки для батьків.',
+    en: 'New smooth Marbling. Volume follows the phone buttons. Error report for parents.' },
+];

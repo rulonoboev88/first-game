@@ -1,6 +1,6 @@
 // Морские жители: 12 видов рыбок и 5 обитателей дна. Плоско, с тёмным контуром.
 // Рыбки смотрят вправо, центр тела в (0,0), длина ≈ 100 единиц.
-import { INK } from './chick.js';
+import { INK } from './ink.js';
 
 export const FISH = ['clown', 'blueTang', 'yellowTang', 'puffer', 'angel', 'goldfish', 'guppy', 'zebra', 'betta', 'shark', 'seahorse', 'jelly'];
 export const BOTTOM = ['crab', 'snail', 'starfish', 'hermit', 'urchin'];

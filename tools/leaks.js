@@ -10,6 +10,8 @@ const CYCLES = +(process.argv[2] || 10);
   const errs = [];
   pg.on('pageerror', (e) => errs.push(e.message));
   pg.on('console', (m) => { if (m.type() === 'error' || /WebGL|context/i.test(m.text())) errs.push(m.text().slice(0, 200)); });
+  // экран первого запуска уже пройден — сразу меню
+  await pg.addInitScript(() => { try { const k = 'fg.prefs.v1'; localStorage.setItem(k, JSON.stringify({ ...JSON.parse(localStorage.getItem(k) || '{}'), welcomed: true })); } catch (_) {} });
   await pg.goto(`http://localhost:${process.env.PORT || 8765}/index.html`);
   await pg.waitForTimeout(800);
   const ids = await pg.evaluate(() => [...document.querySelectorAll('#tiles canvas[data-icon]')].map((c) => c.dataset.icon).filter((i) => i !== 'surprise'));

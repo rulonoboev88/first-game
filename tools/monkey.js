@@ -67,11 +67,13 @@ window.__chaos = (ms, seed) => new Promise((done) => {
   const args = ['--enable-precise-memory-info', '--js-flags=--expose-gc', '--autoplay-policy=no-user-gesture-required'];
   if (GLMODE) args.push('--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist');
   const b = await chromium.launch({ args });
-  const pg = await b.newPage({ viewport: { width: 390, height: 860 }, deviceScaleFactor: 1, locale: 'ru-RU' });
+  const pg = await b.newPage({ viewport: { width: 390, height: 860 }, deviceScaleFactor: 1, locale: 'uk-UA' });
   const errs = [];
   pg.on('pageerror', (e) => errs.push('pageerror: ' + e.message));
   pg.on('console', (m) => { if (m.type() === 'error') errs.push(m.text().slice(0, 300)); });
   await pg.addInitScript(() => { window.__errors = []; try { localStorage.clear(); } catch (_) {} });
+  // экран первого запуска уже пройден — сразу меню
+  await pg.addInitScript(() => { try { const k = 'fg.prefs.v1'; localStorage.setItem(k, JSON.stringify({ ...JSON.parse(localStorage.getItem(k) || '{}'), welcomed: true })); } catch (_) {} });
   await pg.goto(`http://localhost:${process.env.PORT || 8765}/index.html`);
   await pg.waitForTimeout(800);
   await pg.addScriptTag({ content: CHAOS });
