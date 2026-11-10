@@ -18,18 +18,37 @@ const easeOutBack = (t) => { const c = 1.7; return 1 + (c + 1) * Math.pow(t - 1,
 const easeInOut = (t) => t * t * (3 - 2 * t);
 
 /** Кто что любит. Сова не участвует — ей нечего предложить из стола. */
+// Любимая еда: по 4 на зверя (список утверждён владельцем 2026-11-10).
 const LIKES = {
-  cow: ['hay'], pig: ['melon', 'apple', 'corn'], sheep: ['hay', 'cabbage'], goat: ['cabbage', 'hay'],
-  horse: ['carrot', 'apple'], dog: ['bone'], cat: ['fish', 'milk'], frog: ['fly'], mouse: ['cheese'],
-  rabbit: ['carrot', 'cabbage'], hedgehog: ['apple'], bear: ['honey'], fox: ['fish'], squirrel: ['acorn'],
-  hen: ['corn'], rooster: ['corn'], duck: ['bread'], goose: ['bread'],
+  cow: ['hay', 'corn', 'apple', 'pumpkin'],
+  pig: ['melon', 'apple', 'corn', 'potato'],
+  sheep: ['hay', 'cabbage', 'carrot', 'oats'],
+  goat: ['cabbage', 'hay', 'carrot', 'cucumber'],
+  horse: ['carrot', 'apple', 'oats', 'pear'],
+  dog: ['bone', 'sausage', 'drumstick', 'petfood'],
+  cat: ['fish', 'milk', 'sausage', 'petfood'],
+  frog: ['fly', 'mosquito', 'dragonfly', 'beetle'],
+  mouse: ['cheese', 'bread', 'corn', 'seeds'],
+  rabbit: ['carrot', 'cabbage', 'apple', 'hay'],
+  hedgehog: ['apple', 'mushroom', 'strawberry', 'beetle'],
+  bear: ['honey', 'fish', 'apple', 'raspberry'],
+  fox: ['fish', 'sausage', 'egg', 'strawberry'],
+  squirrel: ['acorn', 'hazelnut', 'pinecone', 'mushroom'],
+  hen: ['corn', 'bread', 'seeds', 'peas'],
+  rooster: ['corn', 'bread', 'seeds', 'peas'],
+  duck: ['bread', 'corn', 'peas', 'lettuce'],
+  goose: ['bread', 'corn', 'peas', 'lettuce'],
 };
 const KINDS = Object.keys(LIKES);
 const ALL_FOODS = [...new Set(Object.values(LIKES).flat())];
-const HARD = new Set(['carrot', 'apple', 'bone', 'acorn', 'cabbage', 'corn', 'fly', 'hay']);
+const HARD = new Set(['carrot', 'apple', 'bone', 'acorn', 'cabbage', 'corn', 'fly', 'hay', 'pumpkin', 'potato', 'oats', 'cucumber', 'pear',
+  'drumstick', 'mosquito', 'dragonfly', 'beetle', 'seeds', 'hazelnut', 'pinecone', 'peas', 'lettuce']);
 const CRUMB = {
   carrot: '#FF8A2A', apple: '#EF4B3F', bone: '#FFF3DC', fish: '#5CB8F0', cheese: '#FFC93C', honey: '#FFB627', acorn: '#E0A458',
   cabbage: '#93D46E', hay: '#6CC04A', corn: '#FFD43B', bread: '#E3A456', milk: '#FFFFFF', fly: '#58688A', melon: '#FF5B6E',
+  pumpkin: '#FF9A2E', potato: '#D9A866', oats: '#F2C94C', cucumber: '#4FAF45', pear: '#C9DA4E', sausage: '#E0735A', drumstick: '#C9772E',
+  petfood: '#B5683A', mosquito: '#8A7A6A', dragonfly: '#3FB6A8', beetle: '#EF4B3F', seeds: '#34303B', mushroom: '#B5652E',
+  strawberry: '#F0453B', raspberry: '#E8336D', egg: '#FFF7EC', hazelnut: '#B87A3E', pinecone: '#A86A38', peas: '#7DD45A', lettuce: '#9ADB6E',
 };
 /** Рот в единицах мордочки (центр головы — 0,0). */
 const MOUTH = { frog: [0, 8], hen: [0, 12], rooster: [0, 12], duck: [0, 12], goose: [14, 8], cat: [0, 18], squirrel: [0, 16], mouse: [0, 19], fox: [0, 26] };
@@ -98,7 +117,10 @@ export default class FeedGame {
   deal(delay = 0) {
     for (const f of this.foods) if (f.state !== 'gone' && f.state !== 'fly') { f.state = 'out'; f.t = 0; }
     const likes = LIKES[this.a.kind];
-    const good = likes[Math.floor(Math.random() * likes.length)];
+    // любимое — каждый раз другое (не то, что было в прошлый раз у этого зверя)
+    const fresh = likes.filter((k) => k !== this.a.lastGood);
+    const good = fresh[Math.floor(Math.random() * fresh.length)];
+    this.a.lastGood = good;
     const bad = ALL_FOODS.filter((k) => !likes.includes(k)).sort(() => Math.random() - 0.5).slice(0, 2);
     const kinds = [good, ...bad].sort(() => Math.random() - 0.5);
     kinds.forEach((kind, slot) => {

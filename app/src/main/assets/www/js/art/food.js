@@ -387,29 +387,15 @@ const ART = {
   },
   seeds(K) {
     const ctx = K.ctx;
-    // подсолнух: жёлтые лепестки, в серединке — семечки
-    for (let i = 0; i < 14; i++) {
-      const a = (i / 14) * Math.PI * 2;
-      ctx.save(); ctx.rotate(a);
-      K.part(P('M0 -22 C7 -28 7 -38 0 -42 C-7 -38 -7 -28 0 -22 Z'), i % 2 ? '#FFC93C' : '#FFD95A', { flat: true, lw: 2.2 });
+    // три крупных семечки подсолнуха: тёмные, с белыми полосками
+    for (const [x, y, a] of [[-14, 8, -0.5], [14, 6, 0.45], [0, -12, 0.05]]) {
+      ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+      const sd = P('M0 -24 C13 -14 13 12 0 22 C-13 12 -13 -14 0 -24 Z');
+      K.part(sd, '#34303B', { box: [-13, -24, 13, 22], lw: 3 });
+      K.clip(sd, () => K.line(P('M-5 -16 Q-7 0 -5 16 M5 -16 Q7 0 5 16 M0 -20 L0 18'), 2.2, 'rgba(255,255,255,0.6)'));
+      shine(ctx, -4, -8, 2, 6, 0.1, 0.45);
       ctx.restore();
     }
-    const mid = C(0, 0, 24);
-    K.part(mid, '#6B4226', { box: [-24, -24, 24, 24] });
-    K.clip(mid, () => {
-      for (let r = 4; r < 24; r += 6) {
-        const n = Math.round((r * Math.PI * 2) / 7);
-        for (let i = 0; i < n; i++) {
-          const a = (i / n) * Math.PI * 2 + r;
-          ctx.save(); ctx.translate(Math.cos(a) * r, Math.sin(a) * r); ctx.rotate(a);
-          K.mark(E(0, 0, 3.2, 2), '#2E2A33');
-          K.mark(E(-0.6, -0.5, 1.4, 0.7), 'rgba(255,255,255,0.45)');
-          ctx.restore();
-        }
-      }
-    });
-    K.line(mid, 3);
-    shine(ctx, -10, -12, 5, 2.5, -0.6, 0.35);
   },
   mushroom(K) {
     const ctx = K.ctx;

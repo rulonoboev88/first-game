@@ -735,7 +735,8 @@ const CHARS = {
         const a = Math.PI * (0.85 + (i / 15) * 1.3);
         ctx.beginPath(); ctx.moveTo(Math.cos(a) * 30, Math.sin(a) * 28 - 2); ctx.lineTo(Math.cos(a) * 40, Math.sin(a) * 38 - 2); ctx.stroke();
       }
-      // яблочко на колючках
+      // яблочко на колючках (не в «Покорми зверят» — там яблоко лежит на тарелке)
+      if (K.props === false) return;
       ctx.save(); ctx.translate(30, -42);
       K.part(P('M0 -8 C8 -12 14 -4 12 4 C10 12 2 14 0 11 C-2 14 -10 12 -12 4 C-14 -4 -8 -12 0 -8 Z'), '#FF4D4F', { box: [-12, -12, 14, 14] });
       K.line(P('M0 -8 L1 -14'), 2.4, '#6B4226');
