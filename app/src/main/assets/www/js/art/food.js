@@ -245,26 +245,31 @@ const ART = {
   },
   oats(K) {
     const ctx = K.ctx;
-    // пучок колосков овса: стебли и свисающие зёрнышки-колоски
-    const stalks = [[-0.32, 70], [0, 76], [0.32, 70]];
-    for (const [a, h] of stalks) {
-      ctx.save(); ctx.translate(0, 38); ctx.rotate(a);
-      K.line(P(`M0 0 Q2 -${h * 0.5} 0 -${h}`), 4.6);
-      K.line(P(`M0 0 Q2 -${h * 0.5} 0 -${h}`), 2.4, '#D8B45A');
-      for (let i = 0; i < 5; i++) {
-        const y = -h + 4 + i * 10;
-        for (const s2 of [-1, 1]) {
-          if (i === 0 && s2 === 1) continue;
-          const x2 = s2 * (8 + i * 1.5), y2 = y + 9;
-          K.line(P(`M0 ${y} Q${s2 * 4} ${y + 1} ${x2} ${y2 - 5}`), 1.8, '#B8933F');
-          ctx.save(); ctx.translate(x2, y2); ctx.rotate(s2 * -0.25);
-          K.part(P('M0 -7 C5 -4 5 4 0 8 C-5 4 -5 -4 0 -7 Z'), '#F2D06B', { flat: true, lw: 2 });
-          ctx.restore();
-        }
+    // два золотых колоска крест-накрест — как значок 🌾: чистые парные зёрна ёлочкой и усики
+    for (const a of [-0.38, 0.38]) {
+      // поворот вокруг узелка — колоски расходятся веером
+      ctx.save(); ctx.translate(0, 22); ctx.rotate(a); ctx.translate(0, -22);
+      K.line(P('M0 40 L0 -6'), 5);
+      K.line(P('M0 40 L0 -6'), 2.6, '#D8B45A');
+      // усики
+      K.line(P('M0 -34 L-3 -46 M0 -34 L3 -46 M-6 -26 L-14 -38 M6 -26 L14 -38'), 1.8, '#B8933F');
+      // верхнее зерно и пары ниже
+      const grain = (x, y, rot) => {
+        ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+        K.part(P('M0 -9 C6 -6 6 6 0 9 C-6 6 -6 -6 0 -9 Z'), '#F2C94C', { box: [-6, -9, 6, 9], lw: 2.2 });
+        ctx.restore();
+      };
+      grain(0, -30, 0);
+      for (let i = 0; i < 4; i++) {
+        const y = -22 + i * 8;
+        grain(-6, y, -0.5);
+        grain(6, y, 0.5);
       }
       ctx.restore();
     }
-    K.part(P('M-9 22 L9 22 L10 31 Q0 34 -10 31 Z'), '#E8553D', { flat: true, lw: 2.2 });
+    // ленточка
+    K.part(P('M-10 18 L10 18 L11 27 Q0 30 -11 27 Z'), '#E8553D', { box: [-11, 18, 11, 29], lw: 2.4 });
+    K.part(P('M0 22 C-12 12 -18 26 -6 26 Z M0 22 C12 12 18 26 6 26 Z'), '#F06A50', { flat: true, lw: 2.2 });
   },
   cucumber(K) {
     const ctx = K.ctx;
@@ -312,19 +317,27 @@ const ART = {
   },
   petfood(K) {
     const ctx = K.ctx;
-    // банка корма: крышка-кольцо, этикетка с лапкой
-    const body = P('M-30 -16 L30 -16 L30 26 Q30 32 24 32 L-24 32 Q-30 32 -30 26 Z');
-    K.part(body, '#B9C4D0', { box: [-30, -16, 30, 32] });
-    const label = P('M-30 -8 L30 -8 L30 24 L-30 24 Z');
-    K.part(label, '#FF8FA3', { flat: true, lw: 2.4 });
-    K.clip(label, () => K.mark(P('M-30 16 L30 16 L30 24 L-30 24 Z'), '#F06A85'));
-    // лапка
-    K.part(E(0, 9, 7, 6), '#FFFFFF', { flat: true, lw: 1.8 });
-    for (const [x, y] of [[-8, -1], [-3, -4], [3, -4], [8, -1]]) K.part(E(x, y, 2.6, 3), '#FFFFFF', { flat: true, lw: 1.6 });
-    K.part(E(0, -16, 30, 7), '#DCE3EA', { box: [-30, -23, 30, -9], lw: 3.2 });
-    K.line(E(0, -16, 22, 4.5), 2, 'rgba(60,70,90,0.45)');
-    K.part(P('M-6 -18 Q0 -26 6 -18 Q0 -20 -6 -18 Z'), '#C3CCD6', { flat: true, lw: 2 });
-    shine(ctx, -22, 10, 3, 9, 0, 0.5);
+    // открытая банка корма: откинутая крышка, внутри кусочки корма, на этикетке — лапка
+    K.part(E(18, -30, 20, 7, -0.55), '#DCE3EA', { box: [0, -38, 38, -22], lw: 2.8 });   // крышка, откинута назад
+    K.line(E(18, -30, 13, 4, -0.55), 1.8, 'rgba(60,70,90,0.45)');
+    const body = P('M-32 -14 L32 -14 L32 26 Q32 34 24 34 L-24 34 Q-32 34 -32 26 Z');
+    K.part(body, '#C9D2DC', { box: [-32, -14, 32, 34] });
+    const label = P('M-32 -4 L32 -4 L32 26 L-32 26 Z');
+    K.part(label, '#4DA3FF', { flat: true, lw: 2.4 });
+    K.clip(label, () => K.mark(P('M-32 20 L32 20 L32 26 L-32 26 Z'), '#2F86E0'));
+    // большая белая лапка
+    K.part(E(0, 13, 8.5, 7), '#FFFFFF', { flat: true, lw: 2 });
+    for (const [x, y] of [[-10, 2], [-3.5, -1], [3.5, -1], [10, 2]]) K.part(E(x, y, 3.2, 3.8), '#FFFFFF', { flat: true, lw: 1.8 });
+    // открытый верх с кормом
+    K.part(E(0, -14, 32, 8), '#9AA6B4', { box: [-32, -22, 32, -6], lw: 3.2 });
+    K.clip(E(0, -14, 28, 6.5), () => {
+      K.mark(E(0, -14, 28, 6.5), '#8A4E2A');
+      for (const [x, y, r] of [[-16, -15, 4.5], [-5, -17, 5], [7, -15, 4.5], [18, -16, 4], [0, -11, 4], [-12, -10, 3.5], [13, -11, 3.5]]) {
+        K.mark(C(x, y, r), '#B5683A'); K.mark(C(x - 1, y - 1.2, r * 0.45), '#D08A55');
+      }
+    });
+    K.line(E(0, -14, 28, 6.5), 2);
+    shine(ctx, -24, 8, 3, 10, 0, 0.45);
   },
   mosquito(K) {
     const ctx = K.ctx;
@@ -374,21 +387,29 @@ const ART = {
   },
   seeds(K) {
     const ctx = K.ctx;
-    // горка семечек подсолнуха
-    const pile = [[-18, 16, 0.4], [-4, 18, -0.2], [10, 16, 0.3], [22, 18, -0.4], [-10, 6, -0.5], [4, 4, 0.2], [16, 6, -0.1], [-2, -6, 0.6], [-22, 22, 0.9], [26, 24, 0.1]];
-    for (const [x, y, a] of pile) {
-      ctx.save(); ctx.translate(x, y); ctx.rotate(a);
-      const sd = P('M0 -11 C7 -6 7 6 0 11 C-7 6 -7 -6 0 -11 Z');
-      K.part(sd, '#3B3B48', { flat: true, lw: 2.2 });
-      K.clip(sd, () => K.line(P('M-3 -9 L-3 9 M3 -9 L3 9'), 1.6, 'rgba(255,255,255,0.55)'));
+    // подсолнух: жёлтые лепестки, в серединке — семечки
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2;
+      ctx.save(); ctx.rotate(a);
+      K.part(P('M0 -22 C7 -28 7 -38 0 -42 C-7 -38 -7 -28 0 -22 Z'), i % 2 ? '#FFC93C' : '#FFD95A', { flat: true, lw: 2.2 });
       ctx.restore();
     }
-    // маленький цветок подсолнуха сверху
-    for (let i = 0; i < 10; i++) {
-      const a = (i / 10) * Math.PI * 2;
-      K.part(E(Math.cos(a) * 13, -22 + Math.sin(a) * 13, 6, 3.5, a), '#FFD43B', { flat: true, lw: 1.8 });
-    }
-    K.part(C(0, -22, 9), '#7A4E2A', { flat: true, lw: 2.2 });
+    const mid = C(0, 0, 24);
+    K.part(mid, '#6B4226', { box: [-24, -24, 24, 24] });
+    K.clip(mid, () => {
+      for (let r = 4; r < 24; r += 6) {
+        const n = Math.round((r * Math.PI * 2) / 7);
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2 + r;
+          ctx.save(); ctx.translate(Math.cos(a) * r, Math.sin(a) * r); ctx.rotate(a);
+          K.mark(E(0, 0, 3.2, 2), '#2E2A33');
+          K.mark(E(-0.6, -0.5, 1.4, 0.7), 'rgba(255,255,255,0.45)');
+          ctx.restore();
+        }
+      }
+    });
+    K.line(mid, 3);
+    shine(ctx, -10, -12, 5, 2.5, -0.6, 0.35);
   },
   mushroom(K) {
     const ctx = K.ctx;
@@ -444,19 +465,21 @@ const ART = {
   },
   pinecone(K) {
     const ctx = K.ctx;
-    ctx.rotate(0.2);
-    const body = E(0, 4, 22, 34);
-    K.part(body, '#9A5E30', { box: [-22, -30, 22, 38] });
-    K.clip(body, () => {
-      for (let r = -30; r < 40; r += 9) for (let c = -24; c < 26; c += 11) {
-        const ox = (Math.round(r / 9) % 2) * 5.5;
-        const sc = P(`M${c + ox - 6} ${r} Q${c + ox} ${r + 9} ${c + ox + 6} ${r} Q${c + ox} ${r + 3} ${c + ox - 6} ${r} Z`);
-        K.mark(sc, '#C88A52'); K.line(sc, 1.6, 'rgba(60,30,10,0.55)');
+    // шишка остриём вниз: ряды отдельных чешуек, к низу мельче
+    K.line(P('M0 -34 L0 -44'), 5);
+    K.line(P('M0 -34 L0 -44'), 2.6, '#7A4E2A');
+    const rows = [[-30, 3, 9.5], [-20, 4, 10], [-9, 4, 10], [2, 4, 9], [13, 3, 8.5], [23, 3, 7], [32, 2, 5.5], [39, 1, 4.5]];
+    // рисуем снизу вверх, чтобы верхние чешуйки лежали поверх нижних
+    for (let k = rows.length - 1; k >= 0; k--) {
+      const [y, n, r] = rows[k];
+      const w = n === 1 ? 0 : (n - 1) * r * 1.55;
+      for (let i = 0; i < n; i++) {
+        const x = n === 1 ? 0 : -w / 2 + (w / (n - 1)) * i;
+        const sc = P(`M${x - r} ${y - r * 0.6} Q${x - r * 1.05} ${y + r * 0.9} ${x} ${y + r * 1.1} Q${x + r * 1.05} ${y + r * 0.9} ${x + r} ${y - r * 0.6} Z`);
+        K.part(sc, k % 2 ? '#A86A38' : '#B87A44', { box: [x - r, y - r, x + r, y + r], lw: 2.4 });
+        K.mark(E(x, y + r * 0.55, r * 0.45, r * 0.25), 'rgba(255,230,190,0.35)');
       }
-    });
-    K.line(body, 3.2);
-    K.line(P('M0 -30 L0 -40'), 4.2);
-    K.line(P('M0 -30 L0 -40'), 2, '#7A4E2A');
+    }
   },
   peas(K) {
     const ctx = K.ctx;
