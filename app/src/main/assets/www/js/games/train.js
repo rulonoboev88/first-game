@@ -72,6 +72,7 @@ export default class TrainGame {
   static erasable = false;
   static background = '#BFE6FA';
   static maxDpr = 2.5;
+  static alpha = true; // небо подкладывается позади мира (см. draw)
 
   constructor(stage) {
     this.stage = stage;
@@ -101,8 +102,6 @@ export default class TrainGame {
     this.passengers = [0, 1, 2].map((i) => this.makePassenger(lake[i]));
     this.stars = Array.from({ length: 90 }, () => ({ fx: Math.random(), fy: Math.random(), r: rnd(0.6, 1.6), ph: rnd(0, 6) }));
     this.clouds = Array.from({ length: 5 }, (_, i) => ({ fx: i * 0.28 + rnd(0, 0.15), fy: rnd(0, 1), s: rnd(0.8, 1.25), rain: 0, dark: 0 }));
-    this.wc = document.createElement('canvas');
-    this.wctx = this.wc.getContext('2d');
     this.initLayers();
     preloadAnimals();
     preloadFarm();
@@ -616,6 +615,7 @@ export default class TrainGame {
       }
     }
     for (const k of [...this.crossings.keys()]) if (!this.legs.has(k)) this.crossings.delete(k);
+    for (const k of [...this.bells.keys()]) if (!this.legs.has(k)) this.bells.delete(k);
   }
 
   // ---------- Погода ----------
@@ -695,42 +695,41 @@ export default class TrainGame {
     this.sky = sky;
     const hz = this.railY + HORIZON * c;
 
-    // --- небо ---
+    // Порядок без промежуточного холста (раньше ночью мир рисовался на отдельный холст во весь экран
+    // и копировался — 3–4 лишних полноэкранных прохода, ФПС падал всю ночь):
+    // 1) мир прямо на прозрачный холст; 2) оттенок времени суток только по миру (source-atop);
+    // 3) небо, солнце, луна, звёзды, тучки подкладываются позади (destination-over).
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.restore();
+
+    this.lights = [];
+    ctx.save();
+    ctx.translate(this.left, this.railY);
+    ctx.scale(c, c);
+    this.drawWorld(ctx);
+    ctx.restore();
+
+    if (sky.tint[3] > 0.01 || this.weather.rain > 0.05) {
+      const [r, gg, b, a] = sky.tint;
+      const rain = this.weather.rain * 0.18;
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-atop';
+      if (a > 0.01) { ctx.fillStyle = `rgba(${r | 0},${gg | 0},${b | 0},${a})`; ctx.fillRect(0, 0, w, h); }
+      if (rain > 0.01) { ctx.fillStyle = `rgba(70,80,100,${rain})`; ctx.fillRect(0, 0, w, h); }
+      ctx.restore();
+    }
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-over';
+    this.drawSkyBodies(ctx, sky, hz, true);
     const g = ctx.createLinearGradient(0, 0, 0, hz);
     g.addColorStop(0, sky.top);
     g.addColorStop(1, sky.bot);
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, h);
-    this.drawSkyBodies(ctx, sky, hz);
-
-    // --- мир (с оттенком времени суток) ---
-    const tinted = sky.tint[3] > 0.01 || this.weather.rain > 0.05;
-    let wctx = ctx;
-    if (tinted) {
-      const cw = this.stage.canvas.width, chh = this.stage.canvas.height;
-      if (this.wc.width !== cw || this.wc.height !== chh) { this.wc.width = cw; this.wc.height = chh; }
-      wctx = this.wctx;
-      wctx.setTransform(1, 0, 0, 1, 0, 0);
-      wctx.clearRect(0, 0, cw, chh);
-      wctx.setTransform(this.stage.dpr, 0, 0, this.stage.dpr, 0, 0);
-    }
-    this.lights = [];
-    wctx.save();
-    wctx.translate(this.left, this.railY);
-    wctx.scale(c, c);
-    this.drawWorld(wctx);
-    wctx.restore();
-    if (tinted) {
-      const [r, gg, b, a] = sky.tint;
-      const rain = this.weather.rain * 0.18;
-      wctx.save();
-      wctx.setTransform(1, 0, 0, 1, 0, 0);
-      wctx.globalCompositeOperation = 'source-atop';
-      if (a > 0.01) { wctx.fillStyle = `rgba(${r | 0},${gg | 0},${b | 0},${a})`; wctx.fillRect(0, 0, this.wc.width, this.wc.height); }
-      if (rain > 0.01) { wctx.fillStyle = `rgba(70,80,100,${rain})`; wctx.fillRect(0, 0, this.wc.width, this.wc.height); }
-      wctx.restore();
-      ctx.drawImage(this.wc, 0, 0, w, h);
-    }
+    ctx.restore();
 
     // --- свет: окна, фонари, фара, глазки в темноте ---
     ctx.save();
@@ -742,15 +741,19 @@ export default class TrainGame {
     this.drawDrops(ctx, sky.night);
   }
 
-  drawSkyBodies(ctx, sky, hz) {
+  /** Небесные тела. behind=true — рисуем позади уже нарисованного (destination-over), поэтому в обратном порядке. */
+  drawSkyBodies(ctx, sky, hz, behind = false) {
     const { w } = this;
+    const ops = [];
     const n = sky.night;
     // звёзды
     if (n > 0.05) {
       for (const s of this.stars) {
         const a = n * (0.55 + 0.45 * Math.sin(this.time * 2 + s.ph));
-        ctx.fillStyle = `rgba(255,250,230,${a})`;
-        ctx.beginPath(); ctx.arc(s.fx * w, s.fy * hz * 0.95, s.r, 0, Math.PI * 2); ctx.fill();
+        ops.push(() => {
+          ctx.fillStyle = `rgba(255,250,230,${a})`;
+          ctx.beginPath(); ctx.arc(s.fx * w, s.fy * hz * 0.95, s.r, 0, Math.PI * 2); ctx.fill();
+        });
       }
     }
     const R = Math.max(18, this.c * 0.22);
@@ -760,42 +763,64 @@ export default class TrainGame {
     const sunA = 1 - smooth(0.5, 0.56, this.tod) + smooth(0.86, 0.9, this.tod);
     if (sunA > 0.01) {
       const sx = w * 0.8, sy = lerp(hz * 0.22, hz + R * 0.3, sunK);
-      ctx.globalAlpha = clamp(sunA, 0, 1) * (1 - this.weather.rain * 0.65);
-      const gl = ctx.createRadialGradient(sx, sy, R * 0.5, sx, sy, R * 2.6);
-      gl.addColorStop(0, sunK > 0.4 ? 'rgba(255,170,90,0.45)' : 'rgba(255,240,170,0.45)');
-      gl.addColorStop(1, 'rgba(255,240,170,0)');
-      ctx.fillStyle = gl;
-      ctx.beginPath(); ctx.arc(sx, sy, R * 2.6, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = mixHex('#FFE066', '#FF8C42', sunK);
-      ctx.beginPath(); ctx.arc(sx, sy, R, 0, Math.PI * 2); ctx.fill();
-      ctx.globalAlpha = 1;
+      const al = clamp(sunA, 0, 1) * (1 - this.weather.rain * 0.65);
+      ops.push(() => {
+        ctx.globalAlpha = al;
+        const gl = ctx.createRadialGradient(sx, sy, R * 0.5, sx, sy, R * 2.6);
+        gl.addColorStop(0, sunK > 0.4 ? 'rgba(255,170,90,0.45)' : 'rgba(255,240,170,0.45)');
+        gl.addColorStop(1, 'rgba(255,240,170,0)');
+        ctx.fillStyle = gl;
+        ctx.beginPath(); ctx.arc(sx, sy, R * 2.6, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+      });
+      ops.push(() => {
+        ctx.globalAlpha = al;
+        ctx.fillStyle = mixHex('#FFE066', '#FF8C42', sunK);
+        ctx.beginPath(); ctx.arc(sx, sy, R, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+      });
     }
     // луна
     if (n > 0.05) {
       const mx = w * 0.22, my = hz * 0.25;
-      ctx.globalAlpha = n;
-      const gl = ctx.createRadialGradient(mx, my, R * 0.6, mx, my, R * 2.4);
-      gl.addColorStop(0, 'rgba(220,230,255,0.35)'); gl.addColorStop(1, 'rgba(220,230,255,0)');
-      ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(mx, my, R * 2.4, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#F4F1DE';
-      ctx.beginPath(); ctx.arc(mx, my, R * 0.85, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = 'rgba(200,195,170,0.5)';
-      ctx.beginPath(); ctx.arc(mx - R * 0.25, my - R * 0.15, R * 0.18, 0, Math.PI * 2); ctx.arc(mx + R * 0.3, my + R * 0.25, R * 0.12, 0, Math.PI * 2); ctx.fill();
-      ctx.globalAlpha = 1;
+      ops.push(() => {
+        ctx.globalAlpha = n;
+        const gl = ctx.createRadialGradient(mx, my, R * 0.6, mx, my, R * 2.4);
+        gl.addColorStop(0, 'rgba(220,230,255,0.35)'); gl.addColorStop(1, 'rgba(220,230,255,0)');
+        ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(mx, my, R * 2.4, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+      });
+      ops.push(() => {
+        ctx.globalAlpha = n;
+        ctx.fillStyle = '#F4F1DE';
+        ctx.beginPath(); ctx.arc(mx, my, R * 0.85, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+      });
+      ops.push(() => {
+        ctx.globalAlpha = n;
+        ctx.fillStyle = 'rgba(200,195,170,0.5)';
+        ctx.beginPath(); ctx.arc(mx - R * 0.25, my - R * 0.15, R * 0.18, 0, Math.PI * 2); ctx.arc(mx + R * 0.3, my + R * 0.25, R * 0.12, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+      });
     }
     // тучки
     for (const cl of this.clouds) {
       const p = this.cloudPos(cl);
       const base = mixHex('#FFFFFF', '#5C6C9A', n * 0.8);
-      ctx.fillStyle = cl.dark > 0.02 ? mixHex(n > 0.5 ? '#5C6C9A' : '#FFFFFF', '#98A3B3', cl.dark) : base;
-      ctx.globalAlpha = 0.95;
-      ctx.beginPath();
-      ctx.ellipse(p.x, p.y, p.rx, p.ry, 0, 0, Math.PI * 2);
-      ctx.ellipse(p.x - p.rx * 0.45, p.y - p.ry * 0.5, p.rx * 0.45, p.ry * 0.95, 0, 0, Math.PI * 2);
-      ctx.ellipse(p.x + p.rx * 0.25, p.y - p.ry * 0.75, p.rx * 0.5, p.ry * 1.1, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
+      const col = cl.dark > 0.02 ? mixHex(n > 0.5 ? '#5C6C9A' : '#FFFFFF', '#98A3B3', cl.dark) : base;
+      ops.push(() => {
+        ctx.fillStyle = col;
+        ctx.globalAlpha = 0.95;
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, p.rx, p.ry, 0, 0, Math.PI * 2);
+        ctx.ellipse(p.x - p.rx * 0.45, p.y - p.ry * 0.5, p.rx * 0.45, p.ry * 0.95, 0, 0, Math.PI * 2);
+        ctx.ellipse(p.x + p.rx * 0.25, p.y - p.ry * 0.75, p.rx * 0.5, p.ry * 1.1, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      });
     }
+    if (behind) ops.reverse();
+    for (const f of ops) f();
   }
 
   drawWorld(ctx) {

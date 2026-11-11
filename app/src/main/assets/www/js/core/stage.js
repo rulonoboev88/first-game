@@ -5,14 +5,15 @@
 const REF_AREA = 900 * 810;
 
 export class Stage {
-  constructor(host, { webgl = false, maxDpr = 3 } = {}) {
+  constructor(host, { webgl = false, maxDpr = 3, alpha = false } = {}) {
     this.host = host;
     this.webgl = webgl;
     this.maxDpr = maxDpr;
     this.canvas = document.createElement('canvas');
     host.appendChild(this.canvas);
     // WebGL-игры сами создают свой контекст; остальным — обычный 2D.
-    this.ctx = webgl ? null : this.canvas.getContext('2d', { alpha: false, desynchronized: true });
+    // alpha: прозрачный холст — игра может подкладывать фон позади нарисованного (destination-over).
+    this.ctx = webgl ? null : this.canvas.getContext('2d', alpha ? { alpha: true } : { alpha: false, desynchronized: true });
     this.w = 0;      // ширина в CSS-пикселях
     this.h = 0;      // высота в CSS-пикселях
     this.dpr = 1;

@@ -154,7 +154,7 @@ async function openGame(g) {
   gameEl.style.background = Game.background || '#fff';
   eraseEl.classList.toggle('hidden', !Game.erasable);
 
-  const stage = new Stage(stageEl, { webgl: !!Game.webgl, maxDpr: Game.maxDpr || 3 });
+  const stage = new Stage(stageEl, { webgl: !!Game.webgl, maxDpr: Game.maxDpr || 3, alpha: !!Game.alpha });
   let game;
   try { game = new Game(stage); } catch (e) {
     // игра не смогла стартовать (например, нет WebGL2) — тихо возвращаемся в меню
