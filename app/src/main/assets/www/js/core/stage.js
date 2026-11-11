@@ -1,5 +1,9 @@
 // Полноэкранный холст с учётом плотности пикселей и смены размера (Fold: сложил/разложил).
 
+// Потолок по числу точек: большой планшет рисует не больше точек, чем разложенный Fold (≈900×810)
+// при той же maxDpr, — на нём всё проверено. На 14" планшете тяжёлые игры чуть мягче, зато плавные.
+const REF_AREA = 900 * 810;
+
 export class Stage {
   constructor(host, { webgl = false, maxDpr = 3 } = {}) {
     this.host = host;
@@ -20,9 +24,10 @@ export class Stage {
 
   resize() {
     const r = this.host.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, this.maxDpr);
     const w = Math.max(1, Math.round(r.width));
     const h = Math.max(1, Math.round(r.height));
+    const cap = this.maxDpr * Math.sqrt(Math.min(1, REF_AREA / (w * h)));
+    const dpr = Math.min(window.devicePixelRatio || 1, Math.max(1, cap));
     if (w === this.w && h === this.h && dpr === this.dpr) return;
     const prev = { w: this.w, h: this.h };
     this.w = w; this.h = h; this.dpr = dpr;

@@ -1,5 +1,8 @@
 // «Що нового» в «Про застосунок». Новая версия — новая запись сверху (номер = номер сборки CI).
 export const CHANGELOG = [
+  { v: '0.1.48',
+    uk: 'На телефоні гра лише вертикальна; на планшеті екран повертається. Великі планшети — плавніше.',
+    en: 'Phones stay in portrait; tablets rotate freely. Smoother on big tablets.' },
   { v: '0.1.47',
     uk: 'Екран першого запуску для батьків. Дрібні виправлення.',
     en: 'A first-run screen for parents. Small fixes.' },

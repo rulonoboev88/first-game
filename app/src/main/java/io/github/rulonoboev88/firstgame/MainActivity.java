@@ -5,6 +5,8 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.media.AudioManager;
 import android.content.pm.ApplicationInfo;
 import android.graphics.Color;
@@ -46,9 +48,28 @@ public class MainActivity extends Activity {
     private WebView webView;
     private Vibrator vibrator;
 
+    /**
+     * Телефон (и внешний экран Fold) — только вертикально: в горизонтали на узком экране паровозик
+     * и звери занимают всю высоту, мира не видно. Планшет и разложенный Fold (≥600 dp) — свободный
+     * поворот: игры свёрстаны под оба положения, а Android 16 на больших экранах всё равно игнорирует запрет.
+     */
+    private void applyOrientation(Configuration c) {
+        int want = c.smallestScreenWidthDp >= 600
+                ? ActivityInfo.SCREEN_ORIENTATION_FULL_USER
+                : ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT;
+        if (getRequestedOrientation() != want) setRequestedOrientation(want);
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration c) {
+        super.onConfigurationChanged(c);
+        applyOrientation(c); // сложил/разложил Fold
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        applyOrientation(getResources().getConfiguration());
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
