@@ -6,6 +6,7 @@ import { drawFish } from './sea.js';
 import { drawLoco } from './train.js';
 import { drawRubberDuck } from '../games/ducks.js';
 import { drawFood } from './food.js';
+import { drawBall } from './balls.js';
 
 function circle(ctx, x, y, r, fill, stroke = INK, lw) {
   ctx.beginPath();
@@ -77,6 +78,21 @@ export const ICONS = {
     roundRect(ctx, S * 0.2 + u * 1.08, S * 0.62, u, u, u * 0.16, '#51CF66', lw);
     roundRect(ctx, S * 0.2 + u * 0.54, S * 0.62 - u * 1.04, u, u, u * 0.16, '#FF6B6B', lw);
     roundRect(ctx, S * 0.2 + u * 2.16, S * 0.62, u, u, u * 0.16, '#FFD43B', lw);
+  },
+
+  balls(ctx, S) {
+    drawBall(ctx, 'beach', S * 0.36, S * 0.6, S * 0.62, { rot: 0.4 });
+    drawBall(ctx, 'soccer', S * 0.7, S * 0.66, S * 0.46, { rot: 0.2 });
+    drawBall(ctx, 'star', S * 0.68, S * 0.3, S * 0.3, { rot: -0.3 });
+  },
+
+  ice(ctx, S) {
+    ctx.fillStyle = '#C5E8FA';
+    ctx.beginPath(); ctx.ellipse(S * 0.5, S * 0.8, S * 0.42, S * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = S * 0.015; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(S * 0.18, S * 0.79); ctx.lineTo(S * 0.32, S * 0.77); ctx.stroke();
+    drawBird(ctx, 'penguin', S * 0.33, S * 0.82, S * 0.4, { wing: 0.5, tilt: 0.15 });
+    drawBird(ctx, 'duckling', S * 0.69, S * 0.82, S * 0.36, { flip: true, wing: 0.4 });
   },
 
   fish(ctx, S) {

@@ -1,5 +1,8 @@
 // «Що нового» в «Про застосунок». Новая версия — новая запись сверху (номер = номер сборки CI).
 export const CHANGELOG = [
+  { v: '0.1.51',
+    uk: 'Дві нові ігри «нахили телефон»: «М’ячики» і «Ковзанка» з каченятами й пінгвінами.',
+    en: 'Two new tilt-the-phone games: Balls and Ice rink with ducklings and penguins.' },
   { v: '0.1.49',
     uk: '«Потяг»: увечері й уночі більше не гальмує.',
     en: 'Train: no more slowdown in the evening and at night.' },

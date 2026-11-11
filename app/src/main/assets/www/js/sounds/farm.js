@@ -159,6 +159,11 @@ export function quack(pan = 0, baby = true) {
   quackSynth(pan, baby); return fakeVoice(0.4);
 }
 
+/** Пингвинёнок — писк цыплёнка, опущенный ниже: «пиу» потолще. */
+export function penguinPeep(pan = 0) {
+  if (!sample('chick', { rate: rnd(0.68, 0.78), gain: 1.15, pan })) chirpSynth({ pan, pitch: 0.75 });
+}
+
 /** Гусёнок — запись гуся, поднятая выше. */
 export function honk(pan = 0, baby = true) {
   const v = sample('goose', { rate: baby ? rnd(1.3, 1.5) : rnd(0.95, 1.05), pan, meter: true });

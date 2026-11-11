@@ -102,6 +102,21 @@ export const BIRDS = {
     tuft: '#FFE066',
   },
 
+  penguin: {
+    height: 1.25,
+    legs: [[44, 81], [57, 81]], legLen: 6, legColor: '#FF922B', legWidth: 3.4, webbed: true,
+    parts: [
+      // спинка и голова одним круглым «яйцом» (тёмно-синий, не чёрный — мягче)
+      { path: P('M28 80 C16 72 14 52 18 36 C22 18 34 8 50 8 C66 8 76 18 76 32 C76 42 74 48 76 58 C78 70 70 80 58 82 C48 84 36 84 28 80 Z'), fill: '#3A4763' },
+      // белое брюшко и мордочка — без своего контура, лежит внутри тела
+      { path: P('M55 15 C65 14 71 22 71 31 C71 40 67 46 69 56 C71 68 67 77 57 80 C47 82 41 76 42 64 C43 52 49 45 48 34 C47 25 47 17 55 15 Z'), fill: '#FFFFFF', lw: 0 },
+      { path: P('M72 28 C80 28 88 31 88 34 C88 37 80 39 72 38 Z'), fill: '#FF922B', name: 'beak' },
+      // крылышко-ласта
+      { path: P('M31 42 C22 50 19 63 24 72 C31 66 36 56 38 45 Z'), fill: '#2E3950', name: 'wing', pivot: [34, 44] },
+    ],
+    eye: [62, 25, 3.6], cheek: [65, 36, 3.4],
+  },
+
   gosling: {
     height: 1.2,
     legs: [[44, 78], [56, 78]], legLen: 12, legColor: '#868E96', legWidth: 3.4, webbed: true,
@@ -244,7 +259,7 @@ function drawBody(ctx, def, wing, blink) {
       shade(ctx, part.path, fill);
       ctx.restore();
     } else {
-      shade(ctx, part.path, fill, { rim: part.name !== 'beak' });
+      shade(ctx, part.path, fill, { rim: part.name !== 'beak', lw: part.lw ?? 3.4 });
     }
   }
   if (def.crown) {
